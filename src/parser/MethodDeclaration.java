@@ -6,30 +6,36 @@
 
 package parser;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import java.util.List;
 
-public final class MethodDeclaration extends Statement {
-    private final MethodSymbol symbol;
+import static com.google.common.base.Preconditions.*;
 
-    public MethodDeclaration(TypeDeclaration parent, String name, boolean isStatic, TypeSymbol returnType, List<VariableSymbol> formalParameters) throws ParseException {
+public final class MethodDeclaration extends Statement {
+    private final String name;
+
+    private final boolean isStatic;
+
+    private final String returnType;
+
+    private final List<VariableDeclaration> formalParameters;
+
+    public MethodDeclaration(TypeDeclaration parent, String name, boolean isStatic, String returnType, List<VariableDeclaration> formalParameters) {
         super(parent);
-        for (VariableSymbol parameter : formalParameters) {
-            registerVariableSymbol(parameter);
+        checkNotNull(name);
+        checkNotNull(returnType);
+        checkNotNull(formalParameters);
+        this.name = name;
+        this.isStatic = isStatic;
+        this.returnType = returnType;
+        this.formalParameters = Lists.newArrayList(formalParameters);
+        for (VariableDeclaration declaration : this.formalParameters) {
+            declaration.attach(this);
         }
-        List<TypeSymbol> parameters = Lists.transform(formalParameters, new Function<VariableSymbol, TypeSymbol>() {
-            @Override
-            public TypeSymbol apply(VariableSymbol input) {
-                return input.getType();
-            }
-        });
-        symbol = new MethodSymbol(name, isStatic, returnType, parameters);
-        getParent().registerMethodSymbol(symbol);
     }
 
-    public MethodSymbol getSymbol() {
-        return symbol;
+    public String getReturnType() {
+        return returnType;
     }
 }

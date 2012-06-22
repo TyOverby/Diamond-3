@@ -11,9 +11,9 @@ import static com.google.common.base.Preconditions.*;
 public abstract class Expression extends Node {
     private Node parent;
 
-    private final TypeSymbol type;
+    private final String type;
 
-    protected Expression(TypeSymbol type) {
+    protected Expression(String type) {
         checkNotNull(type);
         parent = null;
         this.type = type;
@@ -25,11 +25,13 @@ public abstract class Expression extends Node {
     }
 
     public void attach(Statement parent) {
+        checkNotNull(parent);
+        checkState(this.parent == null);
         parent.addExpression(this);
         this.parent = parent;
     }
 
-    public TypeSymbol getType() {
+    public String getType() {
         return type;
     }
 }

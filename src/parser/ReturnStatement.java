@@ -13,14 +13,14 @@ public final class ReturnStatement extends Statement {
 
     public ReturnStatement(MethodDeclaration method) {
         super(method);
-        checkArgument(method.getSymbol().getReturnType() == null);
+        checkArgument(method.getReturnType().equals("void"));
         returnValue = null;
     }
 
     public ReturnStatement(MethodDeclaration method, Expression returnValue) {
         super(method);
         checkNotNull(returnValue);
-        checkArgument(method.getSymbol().getReturnType().equals(returnValue.getType()));
+        checkArgument(method.getReturnType().equals(returnValue.getType()));
         this.returnValue = returnValue;
     }
 }

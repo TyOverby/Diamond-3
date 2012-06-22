@@ -6,29 +6,25 @@
 
 package parser;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import java.util.List;
 
 import static com.google.common.base.Preconditions.*;
 
 public abstract class MethodInvocation extends Expression {
-    private final MethodSymbol method;
+    private final String method;
+
+    private final String target;
 
     private final List<Expression> parameters;
 
-    protected MethodInvocation(MethodSymbol method, List<Expression> parameters) {
-        super(method.getReturnType());
+    public MethodInvocation(String method, String returnType, String target, List<Expression> parameters) {
+        super(returnType);
         checkNotNull(method);
-        checkArgument(method.getParameters().equals(Lists.transform(parameters, new Function<Expression, TypeSymbol>() {
-            @Override
-            public TypeSymbol apply(Expression input) {
-                return input.getType();
-            }
-        })));
+        checkNotNull(parameters);
         this.method = method;
+        this.target = target;
         this.parameters = ImmutableList.copyOf(parameters);
     }
 }

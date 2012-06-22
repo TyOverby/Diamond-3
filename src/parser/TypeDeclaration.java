@@ -6,12 +6,14 @@
 
 package parser;
 
-public final class TypeDeclaration extends Statement {
-    private final TypeSymbol symbol;
+import static com.google.common.base.Preconditions.*;
 
-    public TypeDeclaration(Node parent, String name) throws ParseException {
+public final class TypeDeclaration extends Statement {
+    private final String name;
+
+    public TypeDeclaration(Node parent, String name) {
         super(parent);
-        symbol = new TypeSymbol(name);
-        getParent().registerTypeSymbol(symbol);
+        checkNotNull(name);
+        this.name = name;
     }
 }

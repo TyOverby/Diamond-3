@@ -3,5 +3,5 @@ package parser;
 public enum Operator {
     ;
 
-    abstract TypeSymbol validate(TypeSymbol leftOperand, TypeSymbol rightOperand);
+    abstract String validate(String leftOperandType, String rightOperandType);
 }

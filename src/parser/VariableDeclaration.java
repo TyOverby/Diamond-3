@@ -6,12 +6,14 @@
 
 package parser;
 
-public final class VariableDeclaration extends Expression {
-    private final VariableSymbol symbol;
+import static com.google.common.base.Preconditions.*;
 
-    public VariableDeclaration(TypeSymbol type, String name) throws ParseException {
+public final class VariableDeclaration extends Expression {
+    private final String name;
+
+    public VariableDeclaration(String type, String name) {
         super(type);
-        symbol = new VariableSymbol(type, name);
-        getParent().registerVariableSymbol(symbol);
+        checkNotNull(name);
+        this.name = name;
     }
 }

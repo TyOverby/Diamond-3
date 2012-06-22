@@ -6,11 +6,14 @@
 
 package parser;
 
-public final class VariableReference extends Expression {
-    private final VariableSymbol symbol;
+import static com.google.common.base.Preconditions.*;
 
-    public VariableReference(String name) throws ParseException {
-        super(parent.resolveVariableSymbol(name).getType());
-        symbol = getParent().resolveVariableSymbol(name);
+public final class VariableReference extends Expression {
+    private final String name;
+
+    public VariableReference(String type, String name) {
+        super(type);
+        checkNotNull(name);
+        this.name = name;
     }
 }
