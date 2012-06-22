@@ -299,6 +299,8 @@ final class ExpressionParser {
                         value = new BigInteger(token.contents);
                     }
                     return new IntegralLiteral(value);
+                case STRING: // TODO: there have to be string literals
+                    return new StringLiteral(token.contents);
                 default:
                     throw new ParseException("expected expression");
             }
