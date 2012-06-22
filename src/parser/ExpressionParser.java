@@ -22,6 +22,8 @@ final class ExpressionParser {
         stream = Lists.<Object>newArrayList(tokens);
         parseGroupedExpressions(tokens); // recursively parse parenthetical and bracketed expressions first
         // parse operators of each precedence type, probably with separate methods
+        // XXX: REMEMBER TO DO COMMA AT THE END
+        parseGroupingOperators();
         // verify that the stream now consists entirely of expressions
         for (Object obj : stream) {
             assert (obj instanceof Expression);
@@ -66,11 +68,73 @@ final class ExpressionParser {
                         List<Expression> subExpressions = parseExpression(group);
                         stream.subList(startIndex - streamOffset, i - streamOffset).clear();
                         stream.addAll(startIndex - streamOffset, subExpressions);
-                        streamOffset += group.size();
+                        streamOffset += (group.size() - subExpressions.size());
                         startIndex = -1;
                     }
                     break;
             }
+        }
+    }
+
+    private void parseGroupingOperators() throws ParseException {
+        for (int i = 0; i < stream.size(); i++) {
+            if (stream.get(i) instanceof Token) {
+                @SuppressWarnings("unchecked")
+                Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+                List<Object> subList;
+                switch (token.lexeme) {
+                    case PERIOD:
+                        // has to be a member access, right?
+                        String identifier = marshalToken(i - 1).contents + marshalToken(i + 1).contents;
+                        subList = stream.subList(i - 1, i + 2);
+                        subList.clear();
+                        subList.add(new Token<Lexeme>(Lexeme.IDENTIFIER, identifier));
+                        i -= 1; // to account for what we just did
+                        break;
+                    case LEFT_PAREN:
+                        Token<Lexeme> leftToken = marshalToken(i - 1);
+                        if (leftToken.lexeme == Lexeme.IDENTIFIER) {
+                            Token<Lexeme> farLeftToken = marshalToken(i - 2);
+                            if (farLeftToken.lexeme == Lexeme.IDENTIFIER) {
+                                // method declaration
+
+                            } else {
+                                // method invocation
+                                List<Expression> parameters = Lists.newArrayList();
+                                int j = i + 1;
+                                while (true) {
+                                    Object obj = stream.get(j++);
+                                    if (obj instanceof Expression) {
+                                        parameters.add((Expression) obj);
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                if (marshalToken(j).lexeme != Lexeme.RIGHT_PAREN) {
+                                    throw new ParseException("expected ')'");
+                                }
+                                Expression expression = new MethodInvocation(leftToken.contents, parameters);
+                                subList = stream.subList(i - 1, j + 1);
+                                subList.clear();
+                                subList.add(expression);
+                                i -= 1; // to account for what we just did
+                            }
+                        } else {
+                            // simple parenthetical expression
+                        }
+                }
+            }
+        }
+    }
+
+    private Token<Lexeme> marshalToken(int index) throws ParseException {
+        Object obj = stream.get(index);
+        if (obj instanceof Token) {
+            @SuppressWarnings("unchecked")
+            Token<Lexeme> token = (Token<Lexeme>) stream.get(index);
+            return token;
+        } else {
+            throw new ParseException("expected free token");
         }
     }
 }

@@ -31,6 +31,7 @@ public final class DiamondParser {
                     nextNode.clear();
                     break;
                 case SEMICOLON:
+                    // TODO: return and delete have to be dealt with here, since they aren't expressions
                     for (Expression expression : new ExpressionParser().parseExpression(nextNode)) {
                         expression.attach(current);
                     }

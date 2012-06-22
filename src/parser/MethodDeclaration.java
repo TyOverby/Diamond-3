@@ -17,11 +17,11 @@ public final class MethodDeclaration extends Statement {
 
     private final boolean isStatic;
 
-    private final String returnType;
+    private final ExpressionType returnType;
 
     private final List<VariableDeclaration> formalParameters;
 
-    public MethodDeclaration(TypeDeclaration parent, String name, boolean isStatic, String returnType, List<VariableDeclaration> formalParameters) {
+    public MethodDeclaration(TypeDeclaration parent, String name, boolean isStatic, ExpressionType returnType, List<VariableDeclaration> formalParameters) throws ParseException {
         super(parent);
         checkNotNull(name);
         checkNotNull(returnType);
@@ -35,7 +35,7 @@ public final class MethodDeclaration extends Statement {
         }
     }
 
-    public String getReturnType() {
+    public ExpressionType getReturnType() {
         return returnType;
     }
 }
