@@ -1,12 +1,16 @@
 package parser;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import lexer.DiamondLexer.Lexeme;
 import lexer.Token;
 
 import java.math.BigInteger;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 final class ExpressionParser {
     /*
@@ -78,6 +82,39 @@ final class ExpressionParser {
         }
     }
 
+    private ExpressionType getTypeEndingAt(int index) throws ParseException {
+        switch (marshalToken(index).lexeme) {
+            case IDENTIFIER:
+                return new UserDefinedType(marshalToken(index).contents);
+            case RIGHT_BRACKET:
+                return new ArrayType(getTypeEndingAt(index - 2));
+            case BOOLEAN:
+                return BuiltInType.BOOLEAN;
+            case SHORT:
+                return BuiltInType.SHORT;
+            case INT:
+                return BuiltInType.INT;
+            case LONG:
+                return BuiltInType.LONG;
+            default:
+                throw new ParseException("expected identifier, primitive type, or ']'");
+        }
+    }
+
+    private Set<Modifier> getModifiersEndingAt(int index) throws ParseException {
+        Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        loop: while (true) {
+            Token<Lexeme> token = marshalToken(index--);
+            switch (token.lexeme) {
+                case PRIVATE: modifiers.add(Modifier.PRIVATE); break;
+                case STATIC: modifiers.add(Modifier.STATIC); break;
+                case UNSAFE: modifiers.add(Modifier.UNSAFE); break;
+                default: break loop;
+            }
+        }
+        return modifiers;
+    }
+
     private void parseGroupingOperators() throws ParseException {
         for (int i = 0; i < stream.size(); i++) {
             if (stream.get(i) instanceof Token) {
@@ -112,6 +149,23 @@ final class ExpressionParser {
                             subList.add(reference);
                             i -= 1;
                             break;
+                        }
+                    case LEFT_BRACKET:
+                        // the code for PERIOD might not break, so check that we actually have a left bracket
+                        if (marshalToken(i).lexeme == Lexeme.LEFT_BRACKET) {
+                            if (stream.get(i + 1) instanceof Token && marshalToken(i + 1).lexeme == Lexeme.RIGHT_BRACKET) {
+                                if (marshalToken(i + 2).lexeme == Lexeme.IDENTIFIER) {
+                                    // variable declaration with an array type
+                                    ExpressionType type = getTypeEndingAt(i + 1);
+                                    int typeLength = 2 * Pattern.compile("(\\[)").matcher(type.toString()).groupCount() + 1;
+                                    Set<Modifier> modifiers = getModifiersEndingAt((i + 1) - typeLength);
+                                    Expression expression = new VariableDeclaration(type, marshalToken(i + 2).contents, modifiers);
+                                    subList = stream.subList(i - typeLength - modifiers.size(), i + 3);
+                                    subList.clear();
+                                    subList.add(expression);
+                                    i -= (typeLength + modifiers.size());
+                                }
+                            }
                         }
                     case LEFT_PAREN:
                         Token<Lexeme> leftToken = marshalToken(i - 1);
