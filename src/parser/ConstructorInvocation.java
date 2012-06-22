@@ -13,7 +13,6 @@ public final class ConstructorInvocation extends Expression {
 
     public ConstructorInvocation(String target, List<Expression> parameters) {
         super(BuiltInType.INDETERMINATE);
-        checkNotNull(target);
         checkNotNull(parameters);
         for (Expression parameter : parameters) {
             checkArgument(parameter.getType() != BuiltInType.VOID);

@@ -88,8 +88,10 @@ final class ExpressionParser {
                 switch (token.lexeme) {
                     case PERIOD:
                         // has to be a member access, let's figure out what kind
-                        if (marshalToken(i - 1).lexeme != Lexeme.IDENTIFIER || marshalToken(i + 1).lexeme != Lexeme.IDENTIFIER) {
+                        if (marshalToken(i - 1).lexeme != Lexeme.IDENTIFIER) {
                             throw new ParseException("expected identifier");
+                        } else if (marshalToken(i + 1).lexeme != Lexeme.IDENTIFIER && marshalToken(i + 1).lexeme != Lexeme.NEW) {
+                            throw new ParseException("expected identifier or \"new\"");
                         }
                         Token<Lexeme> farRightToken = marshalToken(i + 2);
                         if (farRightToken.lexeme == Lexeme.LEFT_PAREN) {
@@ -99,6 +101,10 @@ final class ExpressionParser {
                             i += 2;
                         } else {
                             // field member access
+                            // the field had better not be called new!
+                            if (marshalToken(i + 1).lexeme != Lexeme.IDENTIFIER) {
+                                throw new ParseException("expected identifier");
+                            }
                             String field = marshalToken(i + 1).contents;
                             Expression reference = new FieldReference(marshalExpression(i - 1), field);
                             subList = stream.subList(i - 1, i + 2);
@@ -109,8 +115,8 @@ final class ExpressionParser {
                         }
                     case LEFT_PAREN:
                         Token<Lexeme> leftToken = marshalToken(i - 1);
-                        if (leftToken.lexeme == Lexeme.IDENTIFIER) {
-                            // method invocation
+                        if (leftToken.lexeme == Lexeme.IDENTIFIER || leftToken.lexeme == Lexeme.NEW) {
+                            // method or constructor invocation
                             List<Expression> parameters = Lists.newArrayList();
                             int j = i + 1;
                             while (true) {
@@ -124,15 +130,30 @@ final class ExpressionParser {
                             if (marshalToken(j).lexeme != Lexeme.RIGHT_PAREN) {
                                 throw new ParseException("expected ')'");
                             }
-                            if (target == null) {
-                                target = new ThisExpression();
-                                subList = stream.subList(i - 1, j + 1);
-                                i -= 1;
+                            Expression invocation;
+                            if (leftToken.lexeme == Lexeme.IDENTIFIER) {
+                                if (target == null) {
+                                    target = new ThisExpression();
+                                    subList = stream.subList(i - 1, j + 1);
+                                    i -= 1;
+                                } else {
+                                    subList = stream.subList(i - 3, j + 1);
+                                    i -= 3;
+                                }
+                                invocation = new MethodInvocation(leftToken.contents, target, parameters);
+                            } else if (leftToken.lexeme == Lexeme.NEW) {
+                                if (target == null) {
+                                    invocation = new ConstructorInvocation(null, parameters);
+                                    subList = stream.subList(i - 1, j + 1);
+                                    i -= 1;
+                                } else {
+                                    invocation = new ConstructorInvocation(((IdentifierReference) target).getName(), parameters);
+                                    subList = stream.subList(i - 3, j + 1);
+                                    i -= 3;
+                                }
                             } else {
-                                subList = stream.subList(i - 3, j + 1);
-                                i -= 3;
+                                throw new AssertionError("Left token MUST either be an identifier or lexeme!");
                             }
-                            Expression invocation = new MethodInvocation(leftToken.contents, target, parameters);
                             subList.clear();
                             subList.add(invocation);
                         } else {

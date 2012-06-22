@@ -16,4 +16,8 @@ public class IdentifierReference extends Expression {
         checkNotNull(name);
         this.name = name;
     }
+
+    public String getName() {
+        return name;
+    }
 }
