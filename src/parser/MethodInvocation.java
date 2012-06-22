@@ -19,8 +19,8 @@ public abstract class MethodInvocation extends Expression {
 
     private final List<Expression> parameters;
 
-    protected MethodInvocation(Node parent, MethodSymbol method, List<Expression> parameters) {
-        super(parent, method.getReturnType());
+    protected MethodInvocation(MethodSymbol method, List<Expression> parameters) {
+        super(method.getReturnType());
         checkNotNull(method);
         checkArgument(method.getParameters().equals(Lists.transform(parameters, new Function<Expression, TypeSymbol>() {
             @Override

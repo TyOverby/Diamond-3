@@ -37,8 +37,12 @@ public abstract class Node {
         this.parent.children.add(this);
     }
 
-    protected final Node getParent() {
+    protected Node getParent() {
         return parent;
+    }
+
+    protected void addExpression(Expression child) {
+        children.add(child);
     }
 
     protected final void registerTypeSymbol(TypeSymbol symbol) throws ParseException {
@@ -62,8 +66,8 @@ public abstract class Node {
     protected final VariableSymbol resolveVariableSymbol(String name) throws ParseException {
         if (variableSymbols.containsKey(name)) {
             return variableSymbols.get(name);
-        } else if (parent != null) {
-            return parent.resolveVariableSymbol(name);
+        } else if (getParent() != null) {
+            return getParent().resolveVariableSymbol(name);
         } else {
             throw new ParseException("cannot resolve variable symbol " + name);
         }

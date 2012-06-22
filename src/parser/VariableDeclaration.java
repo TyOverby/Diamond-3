@@ -9,8 +9,8 @@ package parser;
 public final class VariableDeclaration extends Expression {
     private final VariableSymbol symbol;
 
-    public VariableDeclaration(Node parent, TypeSymbol type, String name) throws ParseException {
-        super(parent, type);
+    public VariableDeclaration(TypeSymbol type, String name) throws ParseException {
+        super(type);
         symbol = new VariableSymbol(type, name);
         getParent().registerVariableSymbol(symbol);
     }

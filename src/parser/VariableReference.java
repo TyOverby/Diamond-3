@@ -9,8 +9,8 @@ package parser;
 public final class VariableReference extends Expression {
     private final VariableSymbol symbol;
 
-    public VariableReference(Node parent, String name) throws ParseException {
-        super(parent, parent.resolveVariableSymbol(name).getType());
+    public VariableReference(String name) throws ParseException {
+        super(parent.resolveVariableSymbol(name).getType());
         symbol = getParent().resolveVariableSymbol(name);
     }
 }

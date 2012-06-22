@@ -13,8 +13,8 @@ import static com.google.common.base.Preconditions.*;
 public final class VirtualMethodInvocation extends MethodInvocation {
     private final Expression target;
 
-    public VirtualMethodInvocation(Node parent, MethodSymbol method, Expression target, List<Expression> parameters) {
-        super(parent, method, parameters);
+    public VirtualMethodInvocation(MethodSymbol method, Expression target, List<Expression> parameters) {
+        super(method, parameters);
         checkNotNull(target);
         checkArgument(!method.isStatic());
         this.target = target;
