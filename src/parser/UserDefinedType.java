@@ -11,6 +11,11 @@ final class UserDefinedType implements ExpressionType {
     }
 
     @Override
+    public boolean isArray() {
+        return false;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -25,5 +30,10 @@ final class UserDefinedType implements ExpressionType {
     @Override
     public int hashCode() {
         return name.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
