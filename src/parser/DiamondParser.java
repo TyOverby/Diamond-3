@@ -1,22 +1,28 @@
 package parser;
 
-import lexer.DiamondLexer;
+import lexer.DiamondLexer.Lexeme;
+import lexer.Token;
 
-import java.io.File;
+import java.util.List;
 
-/**
- * User: Ty
- * Date: 5/12/12
- * Time: 4:12 PM
- */
-public class DiamondParser {
-    private DiamondLexer lexer = new DiamondLexer();
-    
-    public DiamondParser(File file){
+public final class DiamondParser {
+    private Node current;
 
+    public DiamondParser() {
     }
 
-    private void constructTree(){
+    public CompilationUnit parse(List<Token<Lexeme>> tokens) {
+        CompilationUnit compilationUnit = new CompilationUnit();
+        current = compilationUnit;
 
+        for (Token<Lexeme> token : tokens) {
+            switch (token.lexeme) {
+                // do stuff here
+                default:
+                    throw new UnsupportedOperationException("unknown token");
+            }
+        }
+
+        return compilationUnit;
     }
 }
