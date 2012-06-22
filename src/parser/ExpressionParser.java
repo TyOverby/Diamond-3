@@ -118,8 +118,7 @@ final class ExpressionParser {
     private void parseGroupingOperators() throws ParseException {
         for (int i = 0; i < stream.size(); i++) {
             if (stream.get(i) instanceof Token) {
-                @SuppressWarnings("unchecked")
-                Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+                Token<Lexeme> token = marshalToken(i);
                 Expression target = null;
                 List<Object> subList;
                 switch (token.lexeme) {
@@ -270,8 +269,7 @@ final class ExpressionParser {
 
     private void parseOperatorAtIndex(int precedence, int i) throws ParseException {
         if (stream.get(i) instanceof Token) {
-            @SuppressWarnings("unchecked")
-            Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+            Token<Lexeme> token = marshalToken(i);
             Operator operator = Operator.getForLexeme(token.lexeme);
             if (operator != null && operator.getPrecedence() == precedence) {
                 List<Object> subList;
@@ -303,8 +301,7 @@ final class ExpressionParser {
     private void parseLists() throws ParseException {
         for (int i = 0; i < stream.size(); i++) {
             if (stream.get(i) instanceof Token) {
-                @SuppressWarnings("unchecked")
-                Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+                Token<Lexeme> token = marshalToken(i);
                 if (token.lexeme == Lexeme.COMMA) {
                     // ensure that we're between two expressions
                     stream.set(i - 1, marshalExpression(i - 1));
