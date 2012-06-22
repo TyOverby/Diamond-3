@@ -21,6 +21,9 @@ public final class MethodInvocation extends Expression {
         super(BuiltInType.INDETERMINATE);
         checkNotNull(method);
         checkNotNull(parameters);
+        for (Expression parameter : parameters) {
+            checkArgument(parameter.getType() != BuiltInType.VOID);
+        }
         this.method = method;
         this.parameters = ImmutableList.copyOf(parameters);
     }

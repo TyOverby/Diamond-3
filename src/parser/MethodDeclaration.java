@@ -26,6 +26,7 @@ public final class MethodDeclaration extends Statement {
         checkNotNull(name);
         checkNotNull(returnType);
         checkNotNull(formalParameters);
+        checkArgument(returnType != BuiltInType.INDETERMINATE);
         this.name = name;
         this.isStatic = isStatic;
         this.returnType = returnType;

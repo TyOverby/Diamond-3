@@ -13,7 +13,7 @@ public final class ReturnStatement extends Statement {
 
     public ReturnStatement(MethodDeclaration method) throws ParseException {
         super(method);
-        checkArgument(method.getReturnType().equals("void"));
+        checkArgument(method.getReturnType().equals(BuiltInType.VOID));
         returnValue = null;
     }
 

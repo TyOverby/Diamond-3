@@ -13,6 +13,7 @@ public final class VariableDeclaration extends Expression {
 
     public VariableDeclaration(ExpressionType type, String name) {
         super(type);
+        checkArgument(type != BuiltInType.VOID);
         checkArgument(type != BuiltInType.INDETERMINATE);
         checkNotNull(name);
         this.name = name;
