@@ -19,8 +19,8 @@ public abstract class MethodInvocation extends Expression {
 
     private final List<Expression> parameters;
 
-    public MethodInvocation(String method, String returnType, String target, List<Expression> parameters) {
-        super(returnType);
+    public MethodInvocation(String method, String target, List<Expression> parameters) {
+        super(BuiltInType.INDETERMINATE);
         checkNotNull(method);
         checkNotNull(parameters);
         this.method = method;

@@ -11,8 +11,9 @@ import static com.google.common.base.Preconditions.*;
 public final class VariableDeclaration extends Expression {
     private final String name;
 
-    public VariableDeclaration(String type, String name) {
+    public VariableDeclaration(ExpressionType type, String name) {
         super(type);
+        checkArgument(type != BuiltInType.INDETERMINATE);
         checkNotNull(name);
         this.name = name;
     }

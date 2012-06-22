@@ -17,9 +17,9 @@ public abstract class Expression extends Node {
 
     private final List<Expression> children;
 
-    private final String type;
+    private final ExpressionType type;
 
-    protected Expression(String type) {
+    protected Expression(ExpressionType type) {
         checkNotNull(type);
         parent = null;
         children = Lists.newArrayList();
@@ -46,7 +46,7 @@ public abstract class Expression extends Node {
         this.parent = parent;
     }
 
-    public String getType() {
+    public ExpressionType getType() {
         return type;
     }
 }

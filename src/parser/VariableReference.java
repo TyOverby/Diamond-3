@@ -11,8 +11,8 @@ import static com.google.common.base.Preconditions.*;
 public final class VariableReference extends Expression {
     private final String name;
 
-    public VariableReference(String type, String name) {
-        super(type);
+    public VariableReference(String name) {
+        super(BuiltInType.INDETERMINATE);
         checkNotNull(name);
         this.name = name;
     }
