@@ -7,15 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import lexer.Lexer.RuleGroup;
 
-
-
-/**
- * User: Ty
- * Date: 5/11/12
- * Time: 7:48 PM
- */
 public class DiamondLexer {
-    private static enum Lexeme{
+    public static enum Lexeme {
         // Keywords
         REPEAT,
         ABSTRACT,
