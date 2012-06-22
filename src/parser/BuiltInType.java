@@ -3,6 +3,11 @@ package parser;
 enum BuiltInType implements ExpressionType {
     BOOLEAN(true, false), SHORT(true, true), INT(true, true), LONG(true, true), VOID(true, false), STRING(false, false), INDETERMINATE(false, false) {
         @Override
+        public int getNumberOfLexemes() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public String toString() {
             return "<indeterminate>";
         }
@@ -30,6 +35,11 @@ enum BuiltInType implements ExpressionType {
     @Override
     public boolean isIntegral() {
         return integral;
+    }
+
+    @Override
+    public int getNumberOfLexemes() {
+        return 1;
     }
 
     @Override

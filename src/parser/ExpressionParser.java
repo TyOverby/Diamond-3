@@ -9,7 +9,6 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 final class ExpressionParser {
     /*
@@ -129,7 +128,7 @@ final class ExpressionParser {
                             if (marshalToken(i + 2).lexeme == Lexeme.IDENTIFIER) {
                                 // variable declaration with an array type
                                 ExpressionType type = getTypeEndingAt(i + 1);
-                                int typeLength = 2 * Pattern.compile("(\\[)").matcher(type.toString()).groupCount() + 1;
+                                int typeLength = type.getNumberOfLexemes();
                                 Set<Modifier> modifiers = getModifiersEndingAt((i + 1) - typeLength);
                                 Expression expression = new VariableDeclaration(type, marshalToken(i + 2).contents, modifiers);
                                 subList = stream.subList(i - typeLength - modifiers.size(), i + 3);
@@ -146,7 +145,7 @@ final class ExpressionParser {
                                 // member access on our array type
                                 // turn our (compound) array type into an identifier and bounce off of PERIOD
                                 ExpressionType type = getTypeEndingAt(i + 1);
-                                int typeLength = 2 * Pattern.compile("(\\[)").matcher(type.toString()).groupCount() + 1;
+                                int typeLength = type.getNumberOfLexemes();
                                 subList = stream.subList(i - typeLength, i + 1);
                                 subList.clear();
                                 subList.add(new Token<Lexeme>(Lexeme.IDENTIFIER, type.toString()));
