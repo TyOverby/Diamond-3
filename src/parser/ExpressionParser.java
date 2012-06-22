@@ -94,31 +94,25 @@ final class ExpressionParser {
                     case LEFT_PAREN:
                         Token<Lexeme> leftToken = marshalToken(i - 1);
                         if (leftToken.lexeme == Lexeme.IDENTIFIER) {
-                            Token<Lexeme> farLeftToken = marshalToken(i - 2);
-                            if (farLeftToken.lexeme == Lexeme.IDENTIFIER) {
-                                // method declaration
-
-                            } else {
-                                // method invocation
-                                List<Expression> parameters = Lists.newArrayList();
-                                int j = i + 1;
-                                while (true) {
-                                    Object obj = stream.get(j++);
-                                    if (obj instanceof Expression) {
-                                        parameters.add((Expression) obj);
-                                    } else {
-                                        break;
-                                    }
+                            // method invocation
+                            List<Expression> parameters = Lists.newArrayList();
+                            int j = i + 1;
+                            while (true) {
+                                Object obj = stream.get(j++);
+                                if (obj instanceof Expression) {
+                                    parameters.add((Expression) obj);
+                                } else {
+                                    break;
                                 }
-                                if (marshalToken(j).lexeme != Lexeme.RIGHT_PAREN) {
-                                    throw new ParseException("expected ')'");
-                                }
-                                Expression expression = new MethodInvocation(leftToken.contents, parameters);
-                                subList = stream.subList(i - 1, j + 1);
-                                subList.clear();
-                                subList.add(expression);
-                                i -= 1; // to account for what we just did
                             }
+                            if (marshalToken(j).lexeme != Lexeme.RIGHT_PAREN) {
+                                throw new ParseException("expected ')'");
+                            }
+                            Expression expression = new MethodInvocation(leftToken.contents, parameters);
+                            subList = stream.subList(i - 1, j + 1);
+                            subList.clear();
+                            subList.add(expression);
+                            i -= 1; // to account for what we just did
                         } else {
                             // simple parenthetical expression
                         }
