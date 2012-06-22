@@ -23,11 +23,12 @@ final class ExpressionParser {
         stream = Lists.<Object>newArrayList(tokens);
         parseGroupedExpressions(tokens); // recursively parse parenthetical and bracketed expressions first
         // parse operators of each precedence type, probably with separate methods
-        // XXX: REMEMBER TO DO COMMA AT THE END
         parseGroupingOperators();
+        // everything else in here
+        parseLists();
         // verify that the stream now consists entirely of expressions
-        for (Object obj : stream) {
-            assert (obj instanceof Expression);
+        for (int i = 0; i < stream.size(); i++) {
+            stream.set(i, marshalExpression(i));
         }
         @SuppressWarnings("unchecked")
         List<Expression> toReturn = (List<Expression>) stream;
@@ -145,6 +146,23 @@ final class ExpressionParser {
                             subList.add(expression);
                         }
                         break;
+                }
+            }
+        }
+    }
+
+    private void parseLists() throws ParseException {
+        for (int i = 0; i < stream.size(); i++) {
+            if (stream.get(i) instanceof Token) {
+                @SuppressWarnings("unchecked")
+                Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+                if (token.lexeme == Lexeme.COMMA) {
+                    // ensure that we're between two expressions
+                    stream.set(i - 1, marshalExpression(i - 1));
+                    stream.set(i + 1, marshalExpression(i + 1));
+                    // then we can delete this token so that the main parsing succeeds
+                    stream.remove(i);
+                    i -= 1;
                 }
             }
         }
