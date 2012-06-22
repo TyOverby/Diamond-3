@@ -104,12 +104,16 @@ final class ExpressionParser {
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
         boolean flag = true;
         while (flag) {
-            Token<Lexeme> token = marshalToken(index--);
-            switch (token.lexeme) {
-                case PRIVATE: modifiers.add(Modifier.PRIVATE); break;
-                case STATIC: modifiers.add(Modifier.STATIC); break;
-                case UNSAFE: modifiers.add(Modifier.UNSAFE); break;
-                default: flag = false;
+            if (stream.get(index) instanceof Token) {
+                Token<Lexeme> token = marshalToken(index--);
+                switch (token.lexeme) {
+                    case PRIVATE: modifiers.add(Modifier.PRIVATE); break;
+                    case STATIC: modifiers.add(Modifier.STATIC); break;
+                    case UNSAFE: modifiers.add(Modifier.UNSAFE); break;
+                    default: flag = false;
+                }
+            } else {
+                flag = false;
             }
         }
         return modifiers;
