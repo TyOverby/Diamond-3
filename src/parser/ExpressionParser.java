@@ -115,7 +115,15 @@ final class ExpressionParser {
                             i -= 1; // to account for what we just did
                         } else {
                             // simple parenthetical expression
+                            Expression expression = marshalExpression(i + 1);
+                            if (marshalToken(i + 2).lexeme != Lexeme.RIGHT_PAREN) {
+                                throw new ParseException("expected ')'");
+                            }
+                            subList = stream.subList(i, i + 3);
+                            subList.clear();
+                            subList.add(expression);
                         }
+                        break;
                 }
             }
         }
@@ -129,6 +137,15 @@ final class ExpressionParser {
             return token;
         } else {
             throw new ParseException("expected free token");
+        }
+    }
+
+    private Expression marshalExpression(int index) throws ParseException {
+        Object obj = stream.get(index);
+        if (obj instanceof Expression) {
+            return (Expression) obj;
+        } else {
+            throw new ParseException("expected exception");
         }
     }
 }
