@@ -103,13 +103,14 @@ final class ExpressionParser {
 
     private Set<Modifier> getModifiersEndingAt(int index) throws ParseException {
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-        loop: while (true) {
+        boolean flag = true;
+        while (flag) {
             Token<Lexeme> token = marshalToken(index--);
             switch (token.lexeme) {
                 case PRIVATE: modifiers.add(Modifier.PRIVATE); break;
                 case STATIC: modifiers.add(Modifier.STATIC); break;
                 case UNSAFE: modifiers.add(Modifier.UNSAFE); break;
-                default: break loop;
+                default: flag = false;
             }
         }
         return modifiers;
