@@ -11,8 +11,8 @@ import java.util.List;
 final class ExpressionParser {
     /*
      * Intermediate expression parse states can consist of a heterogeneous stream of tokens and sub-expressions. As a
-     * result, we are forced to store the state in a List<?>. At the beginning, the list consists entirely of tokens; at
-     * the end, if everything goes as planned, it should consist entirely of expressions.
+     * result, we are forced to store the state in a List<Object>. At the beginning, the list consists entirely of
+     * tokens; at the end, if everything goes as planned, it should consist entirely of expressions.
      */
     private List<Object> stream;
 
