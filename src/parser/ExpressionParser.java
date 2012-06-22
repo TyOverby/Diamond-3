@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import lexer.DiamondLexer.Lexeme;
 import lexer.Token;
 
+import java.math.BigInteger;
 import java.util.Deque;
 import java.util.List;
 
@@ -167,10 +168,19 @@ final class ExpressionParser {
         } else {
             @SuppressWarnings("unchecked")
             Token<Lexeme> token = (Token<Lexeme>) obj;
-            if (token.lexeme == Lexeme.IDENTIFIER) {
-                return new VariableReference(token.contents);
-            } else {
-                throw new ParseException("expected expression");
+            switch (token.lexeme) {
+                case IDENTIFIER:
+                    return new VariableReference(token.contents);
+                case NUMBER:
+                    BigInteger value;
+                    if (token.contents.startsWith("0x")) {
+                        value = new BigInteger(token.contents.substring(2), 16);
+                    } else {
+                        value = new BigInteger(token.contents);
+                    }
+                    return new IntegralLiteral(value);
+                default:
+                    throw new ParseException("expected expression");
             }
         }
     }
