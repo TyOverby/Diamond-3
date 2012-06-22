@@ -10,5 +10,6 @@ public final class FieldReference extends IdentifierReference {
         checkNotNull(target);
         checkArgument(!target.getType().isPrimitive());
         this.target = target;
+        this.target.attach(this);
     }
 }

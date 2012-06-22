@@ -30,6 +30,10 @@ public final class MethodInvocation extends Expression {
         }
         this.method = method;
         this.target = target;
+        this.target.attach(this);
         this.parameters = ImmutableList.copyOf(parameters);
+        for (Expression parameter : this.parameters) {
+            parameter.attach(this);
+        }
     }
 }

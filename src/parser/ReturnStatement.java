@@ -22,5 +22,6 @@ public final class ReturnStatement extends Statement {
         checkNotNull(returnValue);
         checkArgument(method.getReturnType().equals(returnValue.getType()));
         this.returnValue = returnValue;
+        this.returnValue.attach(this);
     }
 }
