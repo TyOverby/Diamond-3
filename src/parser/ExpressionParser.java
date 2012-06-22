@@ -1,7 +1,6 @@
 package parser;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import lexer.DiamondLexer.Lexeme;
 import lexer.Token;
 
@@ -123,6 +122,51 @@ final class ExpressionParser {
                 Expression target = null;
                 List<Object> subList;
                 switch (token.lexeme) {
+                    case LEFT_BRACKET:
+                        if (stream.get(i + 1) instanceof Token && marshalToken(i + 1).lexeme == Lexeme.RIGHT_BRACKET) {
+                            if (marshalToken(i + 2).lexeme == Lexeme.IDENTIFIER) {
+                                // variable declaration with an array type
+                                ExpressionType type = getTypeEndingAt(i + 1);
+                                int typeLength = 2 * Pattern.compile("(\\[)").matcher(type.toString()).groupCount() + 1;
+                                Set<Modifier> modifiers = getModifiersEndingAt((i + 1) - typeLength);
+                                Expression expression = new VariableDeclaration(type, marshalToken(i + 2).contents, modifiers);
+                                subList = stream.subList(i - typeLength - modifiers.size(), i + 3);
+                                subList.clear();
+                                subList.add(expression);
+                                i -= (typeLength + modifiers.size());
+                                break;
+                            } else if (marshalToken(i + 2).lexeme == Lexeme.LEFT_BRACKET) {
+                                // well, we're in the middle of a multi-dimensional array type token
+                                // get out of here and let the next iteration do it
+                                i += 1;
+                                break;
+                            } else if (marshalToken(i + 2).lexeme == Lexeme.PERIOD) {
+                                // member access on our array type
+                                // turn our (compound) array type into an identifier and bounce off of PERIOD
+                                ExpressionType type = getTypeEndingAt(i + 1);
+                                int typeLength = 2 * Pattern.compile("(\\[)").matcher(type.toString()).groupCount() + 1;
+                                subList = stream.subList(i - typeLength, i + 1);
+                                subList.clear();
+                                subList.add(new Token<Lexeme>(Lexeme.IDENTIFIER, type.toString()));
+                                i -= typeLength;
+                            } else {
+                                // not sure what else could be here?
+                                throw new ParseException("expected identifier, '[', or '.'");
+                            }
+                        } else {
+                            // array access
+                            if (marshalToken(i + 2).lexeme != Lexeme.RIGHT_BRACKET) {
+                                throw new ParseException("expected ']'");
+                            }
+                            Expression array = marshalExpression(i - 1);
+                            Expression index = marshalExpression(i + 1);
+                            Expression arrayAccess = new ArrayAccess(array, index);
+                            subList = stream.subList(i - 1, i + 3);
+                            subList.clear();
+                            subList.add(arrayAccess);
+                            i -= 1;
+                            break;
+                        }
                     case PERIOD:
                         // has to be a member access, let's figure out what kind
                         if (marshalToken(i - 1).lexeme != Lexeme.IDENTIFIER) {
@@ -149,40 +193,6 @@ final class ExpressionParser {
                             subList.add(reference);
                             i -= 1;
                             break;
-                        }
-                    case LEFT_BRACKET:
-                        // the code for PERIOD might not break, so check that we actually have a left bracket
-                        if (marshalToken(i).lexeme == Lexeme.LEFT_BRACKET) {
-                            if (stream.get(i + 1) instanceof Token && marshalToken(i + 1).lexeme == Lexeme.RIGHT_BRACKET) {
-                                if (marshalToken(i + 2).lexeme == Lexeme.IDENTIFIER) {
-                                    // variable declaration with an array type
-                                    ExpressionType type = getTypeEndingAt(i + 1);
-                                    int typeLength = 2 * Pattern.compile("(\\[)").matcher(type.toString()).groupCount() + 1;
-                                    Set<Modifier> modifiers = getModifiersEndingAt((i + 1) - typeLength);
-                                    Expression expression = new VariableDeclaration(type, marshalToken(i + 2).contents, modifiers);
-                                    subList = stream.subList(i - typeLength - modifiers.size(), i + 3);
-                                    subList.clear();
-                                    subList.add(expression);
-                                    i -= (typeLength + modifiers.size());
-                                    break;
-                                } else {
-                                    // constructor or class method invocation on an array type
-                                    // this is the most fun (read: hardest) case, so I'll do it later
-                                }
-                            } else {
-                                // array access
-                                if (marshalToken(i + 2).lexeme != Lexeme.RIGHT_BRACKET) {
-                                    throw new ParseException("expected ']'");
-                                }
-                                Expression array = marshalExpression(i - 1);
-                                Expression index = marshalExpression(i + 1);
-                                Expression arrayAccess = new ArrayAccess(array, index);
-                                subList = stream.subList(i - 1, i + 3);
-                                subList.clear();
-                                subList.add(arrayAccess);
-                                i -= 1;
-                                break;
-                            }
                         }
                     case LEFT_PAREN:
                         Token<Lexeme> leftToken = marshalToken(i - 1);
