@@ -81,16 +81,30 @@ final class ExpressionParser {
             if (stream.get(i) instanceof Token) {
                 @SuppressWarnings("unchecked")
                 Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+                Expression target = null;
                 List<Object> subList;
                 switch (token.lexeme) {
                     case PERIOD:
-                        // has to be a member access, right?
-                        String identifier = marshalToken(i - 1).contents + marshalToken(i + 1).contents;
-                        subList = stream.subList(i - 1, i + 2);
-                        subList.clear();
-                        subList.add(new Token<Lexeme>(Lexeme.IDENTIFIER, identifier));
-                        i -= 1; // to account for what we just did
-                        break;
+                        // has to be a member access, let's figure out what kind
+                        if (marshalToken(i - 1).lexeme != Lexeme.IDENTIFIER || marshalToken(i + 1).lexeme != Lexeme.IDENTIFIER) {
+                            throw new ParseException("expected identifier");
+                        }
+                        Token<Lexeme> farRightToken = marshalToken(i + 2);
+                        if (farRightToken.lexeme == Lexeme.LEFT_PAREN) {
+                            // method member access
+                            // deliberately no break; let it be handled as a method invocation below
+                            target = marshalExpression(i - 1);
+                            i += 2;
+                        } else {
+                            // field member access
+                            String field = marshalToken(i + 1).contents;
+                            Expression reference = new FieldReference(marshalToken(i - 1).contents, field);
+                            subList = stream.subList(i - 1, i + 2);
+                            subList.clear();
+                            subList.add(reference);
+                            i -= 1;
+                            break;
+                        }
                     case LEFT_PAREN:
                         Token<Lexeme> leftToken = marshalToken(i - 1);
                         if (leftToken.lexeme == Lexeme.IDENTIFIER) {
@@ -108,11 +122,17 @@ final class ExpressionParser {
                             if (marshalToken(j).lexeme != Lexeme.RIGHT_PAREN) {
                                 throw new ParseException("expected ')'");
                             }
-                            Expression expression = new MethodInvocation(leftToken.contents, parameters);
-                            subList = stream.subList(i - 1, j + 1);
+                            if (target == null) {
+                                target = new ThisExpression();
+                                subList = stream.subList(i - 1, j + 1);
+                                i -= 1;
+                            } else {
+                                subList = stream.subList(i - 3, j + 1);
+                                i -= 3;
+                            }
+                            Expression invocation = new MethodInvocation(leftToken.contents, target, parameters);
                             subList.clear();
-                            subList.add(expression);
-                            i -= 1; // to account for what we just did
+                            subList.add(invocation);
                         } else {
                             // simple parenthetical expression
                             Expression expression = marshalExpression(i + 1);
@@ -145,7 +165,13 @@ final class ExpressionParser {
         if (obj instanceof Expression) {
             return (Expression) obj;
         } else {
-            throw new ParseException("expected exception");
+            @SuppressWarnings("unchecked")
+            Token<Lexeme> token = (Token<Lexeme>) obj;
+            if (token.lexeme == Lexeme.IDENTIFIER) {
+                return new VariableReference(token.contents);
+            } else {
+                throw new ParseException("expected expression");
+            }
         }
     }
 }

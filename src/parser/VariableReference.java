@@ -8,7 +8,7 @@ package parser;
 
 import static com.google.common.base.Preconditions.*;
 
-public final class VariableReference extends Expression {
+public class VariableReference extends Expression {
     private final String name;
 
     public VariableReference(String name) {
