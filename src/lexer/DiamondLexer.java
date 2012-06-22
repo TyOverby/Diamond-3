@@ -16,26 +16,110 @@ import lexer.Lexer.RuleGroup;
  */
 public class DiamondLexer {
     private static enum Lexeme{
-        // Start off listing the keywords
-        WHILE, FOR, DO, LOOP, FUNCTION, CLASS,
+        // Keywords
+        REPEAT,
+        ABSTRACT,
+        BOOLEAN,
+        BREAK,
+        BYTE,
+        CASE,
+        CATCH,
+        CLASS,
+        CONTINUE,
+        DEFAULT,
+        DELETE,
+        DOUBLE,
+        DO,
+        ELSE,
+        ENUM,
+        EXTENDS,
+        FINAL,
+        FINALLY,
+        FLOAT,
+        FOR,
+        GOTO,
+        IF,
+        IMPLEMENTS,
+        INSTANCEOF,
+        INT,
+        INTERFACE,
+        LONG,
+        NEW,
+        PRIVATE,
+        PROTECTED,
+        RAISE,
+        RETURN,
+        SHORT,
+        STATIC,
+        SUPER,
+        SWITCH,
+        THIS,
+        THROW,
+        THROWS,
+        TRY,
+        UNSAFE,
+        VOID,
+        WHILE,
+        YIELD,
 
-        EQUALS, EQUALSEQUALS,
+        // Delimiters
+        LEFT_BRACE,
+        RIGHT_BRACE,
 
-        // MATH
-        UNSIGNED, SIGNED,
-        PLUS, PLUSPLUS, PLUSEQUALS,
-        MINUS, MINUSMINUS, MINUSEQUALS,
-        TIMES, TIMESEQUALS,
-        DIVIDE, DIVIDEQUALS,
-        MODULO, MODULOEQUALS,
+        LEFT_BRACKET,
+        RIGHT_BRACKET,
 
-        // Other
-        LEFTPAREN, RIGHTPAREN, LEFTBRACKET, RIGHTBRACKET, LEFTBRACE, RIGHTBRACE,
-        STRING,
+        LEFT_PAREN,
+        RIGHT_PAREN,
+
+        SEMICOLON,
+        PERIOD,
+        COMMA,
+
+        // Operators
+        ASSIGNMENT,
+        GREATER_THAN,
+        LESS_THAN,
+        NOT,
+        CONDITIONAL,
+        EQUALITY,
+        LESS_THAN_EQUALS,
+        GREATER_THAN_EQUALS,
+        NOT_EQUALS,
+        LOGICAL_AND,
+        LOGICAL_OR,
+        PLUS_PLUS,
+        MINUS_MINUS,
+        PLUS,
+        MINUS,
+        TIMES,
+        DIVIDE,
+        BITWISE_AND,
+        BITWISE_OR,
+        BITWISE_XOR,
+        MODULO,
+        SHIFT_LEFT,
+        SHIFT_RIGHT,
+        PLUS_EQUALS,
+        MINUS_EQUALS,
+        TIMES_EQUALS,
+        DIVIDE_EQUALS,
+        BITWISE_AND_EQUALS,
+        BITWISE_OR_EQUALS,
+        BITWISE_XOR_EQUALS,
+        MODULO_EQUALS,
+        SHIFT_LEFT_EQUALS,
+        SHIFT_RIGHT_EQUALS,
+
+        TERNARY_QUESTION,
+        TERNARY_COLON,
+
+        // OTHER
+        NUMBER,
         COMMENT,
         IDENTIFIER,
         WHITESPACE,
-        SEMICOLON,
+
     }
 
     private Lexer<Lexeme> lexer = new Lexer<Lexeme>();
@@ -43,7 +127,7 @@ public class DiamondLexer {
     public DiamondLexer(){
         this.setupRules();
     }
-    
+
     public List<Token<Lexeme>> lex(File file) throws IOException {
         List<Token<Lexeme>> toReturn = lexer.lex(file);
 
@@ -60,7 +144,7 @@ public class DiamondLexer {
     }
     public List<Token<Lexeme>> lex(String input) throws IOException {
         List<Token<Lexeme>> toReturn = lexer.lex(input);
-        
+
         Iterator<Token<Lexeme>> i = toReturn.iterator();
         for(Token<Lexeme>token=i.next();i.hasNext();token = i.next()){
             if(token.lexeme==Lexeme.WHITESPACE){
@@ -75,62 +159,123 @@ public class DiamondLexer {
      */
     private void setupRules(){
         List<Lexer.RuleGroup<Lexeme>> ruleGroups = new ArrayList<Lexer.RuleGroup<Lexeme>>();
+        List<Lexer.RuleGroup<Lexeme>> rg = ruleGroups;
 
-        if(ruleGroups.size()>0){
-            throw new RuntimeException("The ruleGroups are already populated.  Can not setup the rules again");
-        }
+        add(rg,Lexeme.REPEAT,       "repeat",true);
+        add(rg,Lexeme.ABSTRACT,     "abstract", true);
+        add(rg,Lexeme.BOOLEAN,      "boolean", true);
+        add(rg,Lexeme.BREAK,        "break", true);
+        add(rg,Lexeme.BYTE,         "byte", true);
+        add(rg,Lexeme.CASE,         "case:", true);
+        add(rg,Lexeme.CATCH,        "catch", true);
+        add(rg,Lexeme.CLASS,        "class", true);
+        add(rg,Lexeme.CONTINUE,     "continue", true);
+        add(rg,Lexeme.DEFAULT,      "default", true);
+        add(rg,Lexeme.DELETE,       "delete", true);
+        add(rg,Lexeme.DOUBLE,       "double", true);
+        add(rg,Lexeme.DO,           "do", true);
+        add(rg,Lexeme.ELSE,         "else", true);
+        add(rg,Lexeme.ENUM,         "enum", true);
+        add(rg,Lexeme.EXTENDS,      "extends", true);
+        add(rg,Lexeme.FINAL,        "final", true);
+        add(rg,Lexeme.FINALLY,      "finally", true);
+        add(rg,Lexeme.FLOAT,        "float", true);
+        add(rg,Lexeme.FOR,          "for", true);
+        add(rg,Lexeme.GOTO,         "goto", true);
+        add(rg,Lexeme.IF,           "if", true);
+        add(rg,Lexeme.IMPLEMENTS,   "implements", true);
+        add(rg,Lexeme.INSTANCEOF,   "instanceof", true);
+        add(rg,Lexeme.INT,          "int", true);
+        add(rg,Lexeme.INTERFACE,    "interface", true);
+        add(rg,Lexeme.LONG,         "long", true);
+        add(rg,Lexeme.NEW,          "new", true);
+        add(rg,Lexeme.PRIVATE,      "private", true);
+        add(rg,Lexeme.PROTECTED,    "protected", true);
+        add(rg,Lexeme.RAISE,        "raise", true);
+        add(rg,Lexeme.RETURN,       "return", true);
+        add(rg,Lexeme.SHORT,        "short", true);
+        add(rg,Lexeme.STATIC,       "static", true);
+        add(rg,Lexeme.SUPER,        "super", true);
+        add(rg,Lexeme.SWITCH,       "switch", true);
+        add(rg,Lexeme.THIS,         "this", true);
+        add(rg,Lexeme.THROW,        "throw", true);
+        add(rg,Lexeme.THROWS,       "throws", true);
+        add(rg,Lexeme.TRY,          "try", true);
+        add(rg,Lexeme.UNSAFE,       "unsafe", true);
+        add(rg,Lexeme.VOID,         "void", true);
+        add(rg,Lexeme.WHILE,        "while", true);
+        add(rg,Lexeme.YIELD,        "yield",true);
 
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.WHILE,"(while)[^\\w]"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.FOR,"(for)[^\\w]"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.DO,"(do)[^\\w]"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.LOOP,"(loop)[^\\w]"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.FUNCTION,"(function)[^\\w]"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.CLASS,"(class)[^\\w]"));
+        add(rg,Lexeme.LEFT_BRACE,   "\\{");
+        add(rg,Lexeme.RIGHT_BRACE,  "\\}");
 
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.COMMENT,"//[^\\n]*"));
+        add(rg,Lexeme.LEFT_BRACKET, "\\[");
+        add(rg,Lexeme.RIGHT_BRACKET,"\\]");
 
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.SIGNED,"\\d+s"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.UNSIGNED,"\\d+u?"));
+        add(rg,Lexeme.LEFT_PAREN,   "\\(");
+        add(rg,Lexeme.RIGHT_PAREN,  "\\)");
 
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.PLUSEQUALS,"\\+="));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.PLUSPLUS,"\\+\\+"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.PLUS,"\\+"));
+        add(rg,Lexeme.SEMICOLON,    ";");
+        add(rg,Lexeme.PERIOD,       "\\.");
+        add(rg,Lexeme.COMMA,        ",");
 
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.MINUSEQUALS,"-="));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.MINUSMINUS,"--"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.MINUS,"-"));
+        add(rg,Lexeme.ASSIGNMENT,   "=");
+        add(rg,Lexeme.GREATER_THAN, ">");
+        add(rg,Lexeme.LESS_THAN,    "<");
+        add(rg,Lexeme.NOT,          "!");
+        add(rg,Lexeme.TERNARY_QUESTION, "\\?");
+        add(rg,Lexeme.TERNARY_COLON,    ":");
+        add(rg,Lexeme.EQUALITY, "==");
+        add(rg,Lexeme.LESS_THAN_EQUALS, "<=");
+        add(rg,Lexeme.GREATER_THAN_EQUALS, ">=");
+        add(rg,Lexeme.NOT_EQUALS, "!=");
+        add(rg,Lexeme.LOGICAL_AND, "&&");
+        add(rg,Lexeme.LOGICAL_OR, "\\|\\|");
+        add(rg,Lexeme.PLUS_PLUS, "\\+\\+");
+        add(rg,Lexeme.MINUS_MINUS, "\\-\\-");
+        add(rg,Lexeme.PLUS, "\\+");
+        add(rg,Lexeme.MINUS, "\\-");
+        add(rg,Lexeme.TIMES, "\\*");
+        add(rg,Lexeme.DIVIDE, "(/)[^/]");
+        add(rg,Lexeme.BITWISE_AND, "&");
+        add(rg,Lexeme.BITWISE_OR, "\\|");
+        add(rg,Lexeme.BITWISE_XOR, "\\^");
+        add(rg,Lexeme.MODULO, "%");
+        add(rg,Lexeme.SHIFT_LEFT, "<<");
+        add(rg,Lexeme.SHIFT_RIGHT, ">>");
+        add(rg,Lexeme.PLUS_EQUALS, "\\+=");
+        add(rg,Lexeme.MINUS_EQUALS, "\\-=");
+        add(rg,Lexeme.TIMES_EQUALS, "\\*=");
+        add(rg,Lexeme.DIVIDE_EQUALS, "/=");
+        add(rg,Lexeme.BITWISE_AND_EQUALS, "&=");
+        add(rg,Lexeme.BITWISE_OR_EQUALS, "\\|=");
+        add(rg,Lexeme.BITWISE_XOR_EQUALS, "\\^=");
+        add(rg,Lexeme.MODULO_EQUALS, "%=");
+        add(rg,Lexeme.SHIFT_LEFT_EQUALS, "<<=");
+        add(rg,Lexeme.SHIFT_RIGHT_EQUALS, ">>=");
 
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.TIMESEQUALS,"\\*="));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.TIMES,"\\*"));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.DIVIDEQUALS,"/="));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.DIVIDE,"/"));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.MODULOEQUALS,"%="));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.MODULO,"%"));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.LEFTPAREN,"\\("));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.RIGHTPAREN,"\\)"));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.LEFTBRACE,"\\["));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.RIGHTBRACE,"\\]"));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.LEFTBRACKET,"\\{"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.RIGHTBRACKET,"\\}"));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.STRING,"\"[^\"]+\""));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.EQUALSEQUALS,"=="));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.EQUALS,"="));
-
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.IDENTIFIER,"[a-zA-Z]+\\w*"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.WHITESPACE," +"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.WHITESPACE,"\n+"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.WHITESPACE,"\t+"));
-        //ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.WHITESPACE," +"));
-        ruleGroups.add(new RuleGroup<Lexeme>(Lexeme.SEMICOLON,";"));
+        add(rg,Lexeme.COMMENT,    "//[^\\n]*");
+        add(rg,Lexeme.IDENTIFIER, "[a-zA-Z]+\\w*");
+        add(rg,Lexeme.NUMBER,     "\\d+");
+        add(rg,Lexeme.WHITESPACE, " +");
+        add(rg,Lexeme.WHITESPACE, "\n+");
+        add(rg,Lexeme.WHITESPACE, "\t+");
 
         this.lexer.setupRules(ruleGroups);
+    }
+
+    private static void add(List<Lexer.RuleGroup<Lexeme>> ruleGroups,Lexeme lexeme, String pattern){
+        add(ruleGroups,lexeme,pattern,false);
+    }
+    // Just an alias for a previously long-to-type expression.  Also handles the adding of
+    private static void add(List<Lexer.RuleGroup<Lexeme>> ruleGroups,Lexeme lexeme, String pattern, boolean isWord){
+        // If the pattern is a word, it adds the correct parens and adds the
+        // "cannot be followed by a letter or number" qualifier
+        if(isWord){
+           // Chill the fuck out.  That + sign will be optimized away
+           pattern = "("+pattern+")"+"[^\\w]";
+        }
+        ruleGroups.add(new RuleGroup<Lexeme>(lexeme,pattern));
     }
 
 
