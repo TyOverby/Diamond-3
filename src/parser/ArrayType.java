@@ -12,6 +12,10 @@ final class ArrayType implements ExpressionType {
         this.elementType = elementType;
     }
 
+    public ExpressionType getElementType() {
+        return elementType;
+    }
+
     @Override
     public boolean isArray() {
         return true;
@@ -19,6 +23,11 @@ final class ArrayType implements ExpressionType {
 
     @Override
     public boolean isPrimitive() {
+        return false;
+    }
+
+    @Override
+    public boolean isIntegral() {
         return false;
     }
 

@@ -1,7 +1,7 @@
 package parser;
 
 enum BuiltInType implements ExpressionType {
-    BOOLEAN(true), SHORT(true), INT(true), LONG(true), VOID(true), STRING(false), INDETERMINATE(false) {
+    BOOLEAN(true, false), SHORT(true, true), INT(true, true), LONG(true, true), VOID(true, false), STRING(false, false), INDETERMINATE(false, false) {
         @Override
         public String toString() {
             return "<indeterminate>";
@@ -10,8 +10,11 @@ enum BuiltInType implements ExpressionType {
 
     private final boolean primitive;
 
-    private BuiltInType(boolean primitive) {
+    private final boolean integral;
+
+    private BuiltInType(boolean primitive, boolean integral) {
         this.primitive = primitive;
+        this.integral = integral;
     }
 
     @Override
@@ -22,6 +25,11 @@ enum BuiltInType implements ExpressionType {
     @Override
     public boolean isPrimitive() {
         return primitive;
+    }
+
+    @Override
+    public boolean isIntegral() {
+        return integral;
     }
 
     @Override

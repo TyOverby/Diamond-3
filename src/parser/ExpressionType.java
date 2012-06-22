@@ -4,4 +4,6 @@ public interface ExpressionType {
     boolean isArray();
 
     boolean isPrimitive();
+
+    boolean isIntegral();
 }

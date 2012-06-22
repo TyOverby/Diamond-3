@@ -164,7 +164,24 @@ final class ExpressionParser {
                                     subList.clear();
                                     subList.add(expression);
                                     i -= (typeLength + modifiers.size());
+                                    break;
+                                } else {
+                                    // constructor or class method invocation on an array type
+                                    // this is the most fun (read: hardest) case, so I'll do it later
                                 }
+                            } else {
+                                // array access
+                                if (marshalToken(i + 2).lexeme != Lexeme.RIGHT_BRACKET) {
+                                    throw new ParseException("expected ']'");
+                                }
+                                Expression array = marshalExpression(i - 1);
+                                Expression index = marshalExpression(i + 1);
+                                Expression arrayAccess = new ArrayAccess(array, index);
+                                subList = stream.subList(i - 1, i + 3);
+                                subList.clear();
+                                subList.add(arrayAccess);
+                                i -= 1;
+                                break;
                             }
                         }
                     case LEFT_PAREN:
