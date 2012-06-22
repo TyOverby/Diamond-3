@@ -8,10 +8,10 @@ package parser;
 
 import static com.google.common.base.Preconditions.*;
 
-public class VariableReference extends Expression {
+public class IdentifierReference extends Expression {
     private final String name;
 
-    public VariableReference(String name) {
+    public IdentifierReference(String name) {
         super(BuiltInType.INDETERMINATE);
         checkNotNull(name);
         this.name = name;

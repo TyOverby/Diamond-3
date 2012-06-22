@@ -170,7 +170,7 @@ final class ExpressionParser {
             Token<Lexeme> token = (Token<Lexeme>) obj;
             switch (token.lexeme) {
                 case IDENTIFIER:
-                    return new VariableReference(token.contents);
+                    return new IdentifierReference(token.contents);
                 case NUMBER:
                     BigInteger value;
                     if (token.contents.startsWith("0x")) {

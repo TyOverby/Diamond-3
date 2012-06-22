@@ -2,7 +2,7 @@ package parser;
 
 import static com.google.common.base.Preconditions.*;
 
-public final class FieldReference extends VariableReference {
+public final class FieldReference extends IdentifierReference {
     private final Expression target;
 
     public FieldReference(Expression target, String field) {
