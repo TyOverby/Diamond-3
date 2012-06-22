@@ -24,7 +24,7 @@ public final class MethodInvocation extends Expression {
         checkNotNull(method);
         checkNotNull(target);
         checkNotNull(parameters);
-        checkArgument(target.getType() != BuiltInType.VOID);
+        checkArgument(!target.getType().isPrimitive());
         for (Expression parameter : parameters) {
             checkArgument(parameter.getType() != BuiltInType.VOID);
         }

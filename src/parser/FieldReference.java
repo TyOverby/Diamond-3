@@ -3,11 +3,12 @@ package parser;
 import static com.google.common.base.Preconditions.*;
 
 public final class FieldReference extends VariableReference {
-    private final String target;
+    private final Expression target;
 
-    public FieldReference(String target, String field) {
+    public FieldReference(Expression target, String field) {
         super(field);
         checkNotNull(target);
+        checkArgument(!target.getType().isPrimitive());
         this.target = target;
     }
 }

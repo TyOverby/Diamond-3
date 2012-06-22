@@ -1,16 +1,27 @@
 package parser;
 
 enum BuiltInType implements ExpressionType {
-    BOOLEAN, SHORT, INT, LONG, VOID, STRING, INDETERMINATE {
+    BOOLEAN(true), SHORT(true), INT(true), LONG(true), VOID(true), STRING(false), INDETERMINATE(false) {
         @Override
         public String toString() {
             return "<indeterminate>";
         }
     };
 
+    private final boolean primitive;
+
+    private BuiltInType(boolean primitive) {
+        this.primitive = primitive;
+    }
+
     @Override
     public boolean isArray() {
         return false;
+    }
+
+    @Override
+    public boolean isPrimitive() {
+        return primitive;
     }
 
     @Override

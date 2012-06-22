@@ -99,7 +99,7 @@ final class ExpressionParser {
                         } else {
                             // field member access
                             String field = marshalToken(i + 1).contents;
-                            Expression reference = new FieldReference(marshalToken(i - 1).contents, field);
+                            Expression reference = new FieldReference(marshalExpression(i - 1), field);
                             subList = stream.subList(i - 1, i + 2);
                             subList.clear();
                             subList.add(reference);
