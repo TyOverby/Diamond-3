@@ -27,7 +27,7 @@ public final class DiamondParser {
                     if (!nextNode.isEmpty()) {
                         throw new ParseException("expected ';' or '{'");
                     }
-                    current = (Statement) current.getParent();
+                    current = current.getParent();
                     nextNode.clear();
                     break;
                 case SEMICOLON:

@@ -11,7 +11,7 @@ import static com.google.common.base.Preconditions.*;
 public final class TypeDeclaration extends Statement {
     private final String name;
 
-    public TypeDeclaration(Node parent, String name) {
+    public TypeDeclaration(Statement parent, String name) throws ParseException {
         super(parent);
         checkNotNull(name);
         this.name = name;
