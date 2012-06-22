@@ -25,9 +25,10 @@ final class ExpressionParser {
     public List<Expression> parseExpression(List<Token<Lexeme>> tokens) throws ParseException {
         stream = Lists.<Object>newArrayList(tokens);
         parseGroupedExpressions(tokens); // recursively parse parenthetical and bracketed expressions first
-        // parse operators of each precedence type, probably with separate methods
         parseGroupingOperators();
-        // everything else in here
+        for (int precedence = 14; precedence > 0; precedence--) {
+            parseOperators(precedence);
+        }
         parseLists();
         // verify that the stream now consists entirely of expressions
         for (int i = 0; i < stream.size(); i++) {
@@ -249,6 +250,52 @@ final class ExpressionParser {
                         }
                         break;
                 }
+            }
+        }
+    }
+
+    private void parseOperators(int precedence) throws ParseException {
+        if (precedence == 1 || precedence == 2 || precedence == 13 || precedence == 14) {
+            // right associative
+            for (int i = stream.size() - 1; i >= 0; i--) {
+                parseOperatorAtIndex(precedence, i);
+            }
+        } else {
+            // left associative
+            for (int i = 0; i < stream.size(); i++) {
+                parseOperatorAtIndex(precedence, i);
+            }
+        }
+    }
+
+    private void parseOperatorAtIndex(int precedence, int i) throws ParseException {
+        if (stream.get(i) instanceof Token) {
+            @SuppressWarnings("unchecked")
+            Token<Lexeme> token = (Token<Lexeme>) stream.get(i);
+            Operator operator = Operator.getForLexeme(token.lexeme);
+            if (operator != null && operator.getPrecedence() == precedence) {
+                List<Object> subList;
+                Expression expression;
+                switch (operator.getType()) {
+                    case POSTFIX:
+                        subList = stream.subList(i - 1, i + 1);
+                        expression = new OperatorExpression(marshalExpression(i - 1), operator);
+                        i -= 1;
+                        break;
+                    case UNARY:
+                        subList = stream.subList(i, i + 2);
+                        expression = new OperatorExpression(operator, marshalExpression(i + 1));
+                        break;
+                    case BINARY:
+                        subList = stream.subList(i - 1, i + 2);
+                        expression = new OperatorExpression(marshalExpression(i - 1), marshalExpression(i + 1), operator);
+                        i -= 1;
+                        break;
+                    default:
+                        throw new AssertionError();
+                }
+                subList.clear();
+                subList.add(expression);
             }
         }
     }
