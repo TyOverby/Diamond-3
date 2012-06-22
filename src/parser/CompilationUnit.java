@@ -6,7 +6,7 @@
 
 package parser;
 
-public final class CompilationUnit extends Node {
+public final class CompilationUnit extends Statement {
     public CompilationUnit() {
     }
 }

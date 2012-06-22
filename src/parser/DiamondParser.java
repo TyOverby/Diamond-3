@@ -7,7 +7,7 @@ import lexer.Token;
 import java.util.List;
 
 public final class DiamondParser {
-    private Node current;
+    private Statement current;
 
     public DiamondParser() {
     }
@@ -27,11 +27,13 @@ public final class DiamondParser {
                     if (!nextNode.isEmpty()) {
                         throw new ParseException("expected ';' or '{'");
                     }
-                    current = current.getParent();
+                    current = (Statement) current.getParent();
                     nextNode.clear();
                     break;
                 case SEMICOLON:
-                    parseExpression(nextNode);
+                    for (Expression expression : new ExpressionParser().parseExpression(nextNode)) {
+                        expression.attach(current);
+                    }
                     nextNode.clear();
                     break;
             }
@@ -45,8 +47,5 @@ public final class DiamondParser {
     }
 
     private Statement parseStatement(List<Token<Lexeme>> statement) {
-    }
-
-    private Expression parseExpression(List<Token<Lexeme>> expression) {
     }
 }
