@@ -16,4 +16,8 @@ public final class TypeDeclaration extends Statement {
         checkNotNull(name);
         this.name = name;
     }
+
+    public String getName() {
+        return name;
+    }
 }
