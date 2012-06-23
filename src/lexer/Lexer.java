@@ -1,17 +1,14 @@
 package lexer;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
+
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * User: Ty
- * Date: 5/6/12
- * Time: 9:10 PM
- */
 public class Lexer<E extends Enum<E>>{
-
     /**
      * Each RuleGroup contains a lexeme, the basic regular expression and a compiled
      * regular expression.
@@ -59,38 +56,26 @@ public class Lexer<E extends Enum<E>>{
         this.ruleGroups = ruleGroups;
     }
 
-
-
     /**
-     * Reads a file in and writes it to a StringBuilder.  This is then passed into the usual lex() method as a string.
-     * See lex()
-     * @param filePath The file to lex.
-     * @return The list of tokens that were lexed.
-     * @throws IOException If the file could not be found
+     * Reads the contents of the specified file as an ASCII string, which is then passed to {@link #lex(String)}.
+     *
+     * @param filePath the file to lex
+     * @return the list of tokens that were lexed
+     * @throws IOException if the file could not be found or read
+     * @see #lex(String)
      */
     public List<Token<E>> lex(File filePath) throws IOException {
-        FileInputStream fstream = new FileInputStream(filePath);
-
-        DataInputStream in = new DataInputStream(fstream);
-        BufferedReader br = new BufferedReader(new InputStreamReader(in));
-        StringBuilder sb = new StringBuilder();
-
-        String strLine;
-        while ((strLine = br.readLine()) != null)   {
-            //System.out.println (strLine);
-            sb.append(strLine+"\n");
-        }
-        in.close();
-        
-        return lex(sb.toString());
+        Readable reader = new InputStreamReader(new FileInputStream(filePath), Charsets.US_ASCII);
+        return lex(CharStreams.toString(reader));
     }
 
     /**
      * Given an input string, the lexer goes through each regex finding ones that start at the
      * current head of the string.  If one matches, it trims the string from that point and starts again
      * If no regexes match, an error is printed, and the already processed ones are returned.
-     * @param input
-     * @return
+     *
+     * @param input the string to lex
+     * @return the list of tokens that were lexed
      */
     public List<Token<E>> lex(String input){
         // The original input is preserved for error checking.
@@ -103,10 +88,10 @@ public class Lexer<E extends Enum<E>>{
         //int curPos=0;
         boolean working = true;
         
-        while(working){
-            boolean  couldBeMatched = false;
+        while (working){
+            boolean couldBeMatched = false;
             // Go through every regex in the rule groups
-            for(RuleGroup rg:ruleGroups){
+            for (RuleGroup<E> rg : ruleGroups){
                 Matcher matcher = rg.compiledRegex.matcher(input);
 
                 // If a match has been found
@@ -116,7 +101,7 @@ public class Lexer<E extends Enum<E>>{
                     int end = matcher.end(1);
                     if(start==0){
                         // If it is, make a new token with the provided lexeme and the text
-                        tokens.add(new Token(rg.lexeme,matcher.group(1)));
+                        tokens.add(new Token<E>(rg.lexeme,matcher.group(1)));
                         // Shift the head of the string to the end of the group.
                         input = shiftString(input,end);
                         // And advance the global position to the end for use in debugging.
