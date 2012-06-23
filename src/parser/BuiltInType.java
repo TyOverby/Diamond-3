@@ -23,11 +23,6 @@ enum BuiltInType implements ExpressionType {
     }
 
     @Override
-    public boolean isArray() {
-        return false;
-    }
-
-    @Override
     public boolean isPrimitive() {
         return primitive;
     }
@@ -35,6 +30,11 @@ enum BuiltInType implements ExpressionType {
     @Override
     public boolean isIntegral() {
         return integral;
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return integral; // for now, these are the same
     }
 
     @Override

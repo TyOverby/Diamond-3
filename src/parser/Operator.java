@@ -9,7 +9,7 @@ public enum Operator {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
             checkArgument(rightOperandType == null);
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
             return leftOperandType;
         }
     },
@@ -18,7 +18,7 @@ public enum Operator {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
             checkArgument(rightOperandType == null);
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
             return leftOperandType;
         }
     },
@@ -27,7 +27,7 @@ public enum Operator {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
             checkArgument(leftOperandType == null);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
             return rightOperandType;
         }
     },
@@ -36,7 +36,7 @@ public enum Operator {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
             checkArgument(leftOperandType == null);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
             return rightOperandType;
         }
     },
@@ -45,7 +45,7 @@ public enum Operator {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
             checkArgument(leftOperandType == null);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
             return rightOperandType;
         }
     },
@@ -54,7 +54,7 @@ public enum Operator {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
             checkArgument(leftOperandType == null);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
             return rightOperandType;
         }
     },
@@ -71,9 +71,9 @@ public enum Operator {
     MULTIPLICATION(12, Type.BINARY, Lexeme.TIMES) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
-            if (leftOperandType.isIntegral() && rightOperandType.isIntegral()) {
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
+            if (leftOperandType.isNumeric() && rightOperandType.isNumeric()) {
                 if (leftOperandType == BuiltInType.LONG || rightOperandType == BuiltInType.LONG) {
                     return BuiltInType.LONG;
                 } else if (leftOperandType == BuiltInType.INT || rightOperandType == BuiltInType.INT) {
@@ -90,9 +90,9 @@ public enum Operator {
     DIVISION(12, Type.BINARY, Lexeme.DIVIDE) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
-            if (leftOperandType.isIntegral() && rightOperandType.isIntegral()) {
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
+            if (leftOperandType.isNumeric() && rightOperandType.isNumeric()) {
                 if (leftOperandType == BuiltInType.LONG || rightOperandType == BuiltInType.LONG) {
                     return BuiltInType.LONG;
                 } else if (leftOperandType == BuiltInType.INT || rightOperandType == BuiltInType.INT) {
@@ -109,9 +109,9 @@ public enum Operator {
     MODULUS(12, Type.BINARY, Lexeme.MODULO) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
-            if (leftOperandType.isIntegral() && rightOperandType.isIntegral()) {
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
+            if (leftOperandType.isNumeric() && rightOperandType.isNumeric()) {
                 if (leftOperandType == BuiltInType.LONG || rightOperandType == BuiltInType.LONG) {
                     return BuiltInType.LONG;
                 } else if (leftOperandType == BuiltInType.INT || rightOperandType == BuiltInType.INT) {
@@ -131,9 +131,9 @@ public enum Operator {
             if (leftOperandType == BuiltInType.STRING || rightOperandType == BuiltInType.STRING) {
                 return BuiltInType.STRING;
             } else {
-                checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-                checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
-                if (leftOperandType.isIntegral() && rightOperandType.isIntegral()) {
+                checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+                checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
+                if (leftOperandType.isNumeric() && rightOperandType.isNumeric()) {
                     if (leftOperandType == BuiltInType.LONG || rightOperandType == BuiltInType.LONG) {
                         return BuiltInType.LONG;
                     } else if (leftOperandType == BuiltInType.INT || rightOperandType == BuiltInType.INT) {
@@ -151,9 +151,9 @@ public enum Operator {
     SUBTRACTION(11, Type.BINARY, Lexeme.MINUS) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || rightOperandType == BuiltInType.INDETERMINATE);
-            if (leftOperandType.isIntegral() && rightOperandType.isIntegral()) {
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || rightOperandType == BuiltInType.INDETERMINATE);
+            if (leftOperandType.isNumeric() && rightOperandType.isNumeric()) {
                 if (leftOperandType == BuiltInType.LONG || rightOperandType == BuiltInType.LONG) {
                     return BuiltInType.LONG;
                 } else if (leftOperandType == BuiltInType.INT || rightOperandType == BuiltInType.INT) {
@@ -196,8 +196,8 @@ public enum Operator {
     LESS_THAN(9, Type.BINARY, Lexeme.LESS_THAN) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
             return BuiltInType.BOOLEAN;
         }
     },
@@ -205,8 +205,8 @@ public enum Operator {
     LEQ(9, Type.BINARY, Lexeme.LESS_THAN_EQUALS) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
             return BuiltInType.BOOLEAN;
         }
     },
@@ -214,8 +214,8 @@ public enum Operator {
     GREATER_THAN(9, Type.BINARY, Lexeme.GREATER_THAN) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
             return BuiltInType.BOOLEAN;
         }
     },
@@ -223,8 +223,8 @@ public enum Operator {
     GEQ(9, Type.BINARY, Lexeme.GREATER_THAN_EQUALS) {
         @Override
         ExpressionType validate(ExpressionType leftOperandType, ExpressionType rightOperandType) {
-            checkArgument(leftOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
-            checkArgument(rightOperandType.isIntegral() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(leftOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
+            checkArgument(rightOperandType.isNumeric() || leftOperandType == BuiltInType.INDETERMINATE);
             return BuiltInType.BOOLEAN;
         }
     },

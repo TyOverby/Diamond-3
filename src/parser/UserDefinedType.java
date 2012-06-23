@@ -11,17 +11,17 @@ final class UserDefinedType implements ExpressionType {
     }
 
     @Override
-    public boolean isArray() {
-        return false;
-    }
-
-    @Override
     public boolean isPrimitive() {
         return false;
     }
 
     @Override
     public boolean isIntegral() {
+        return false;
+    }
+
+    @Override
+    public boolean isNumeric() {
         return false;
     }
 

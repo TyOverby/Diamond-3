@@ -1,11 +1,11 @@
 package parser;
 
 public interface ExpressionType {
-    boolean isArray();
-
     boolean isPrimitive();
 
     boolean isIntegral();
+
+    boolean isNumeric();
 
     /**
      * Calculates and returns the number of lexemes required to form the complete type token for this type. This value
