@@ -79,6 +79,16 @@ final class ExpressionParser {
                     break;
             }
         }
+
+        // if the stack has anything left, syntax error
+        if (!groupingStack.isEmpty()) {
+            switch (groupingStack.pop()) {
+                case PARENTHESIS:
+                    throw new ParseException("expected ')'");
+                case BRACKET:
+                    throw new ParseException("expected ']'");
+            }
+        }
     }
 
     private ExpressionType getTypeEndingAt(int index) throws ParseException {
