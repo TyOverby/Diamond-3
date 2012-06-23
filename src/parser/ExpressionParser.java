@@ -71,7 +71,7 @@ final class ExpressionParser {
                         throw new ParseException("mismatched grouping symbols");
                     } else if (groupingStack.isEmpty()) {
                         List<Token<Lexeme>> group = tokens.subList(startIndex, i);
-                        List<Expression> subExpressions = parseExpression(group);
+                        List<Expression> subExpressions = new ExpressionParser().parseExpression(group);
                         stream.subList(startIndex - streamOffset, i - streamOffset).clear();
                         stream.addAll(startIndex - streamOffset, subExpressions);
                         streamOffset += (group.size() - subExpressions.size());
