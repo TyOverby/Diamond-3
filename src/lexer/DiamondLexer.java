@@ -10,7 +10,6 @@ import lexer.Lexer.RuleGroup;
 public class DiamondLexer {
     public static enum Lexeme {
         // Keywords
-        REPEAT,
         ABSTRACT,
         BOOLEAN,
         BREAK,
@@ -41,6 +40,7 @@ public class DiamondLexer {
         PRIVATE,
         PROTECTED,
         RAISE,
+        REPEAT,
         RETURN,
         SHORT,
         STATIC,
@@ -74,7 +74,6 @@ public class DiamondLexer {
         GREATER_THAN,
         LESS_THAN,
         NOT,
-        CONDITIONAL,
         EQUALITY,
         LESS_THAN_EQUALS,
         GREATER_THAN_EQUALS,
@@ -111,8 +110,7 @@ public class DiamondLexer {
         NUMBER,
         COMMENT,
         IDENTIFIER,
-        WHITESPACE,
-
+        WHITESPACE
     }
 
     private Lexer<Lexeme> lexer = new Lexer<Lexeme>();
@@ -154,7 +152,6 @@ public class DiamondLexer {
         List<Lexer.RuleGroup<Lexeme>> ruleGroups = new ArrayList<Lexer.RuleGroup<Lexeme>>();
         List<Lexer.RuleGroup<Lexeme>> rg = ruleGroups;
 
-        add(rg,Lexeme.REPEAT,       "repeat",true);
         add(rg,Lexeme.ABSTRACT,     "abstract", true);
         add(rg,Lexeme.BOOLEAN,      "boolean", true);
         add(rg,Lexeme.BREAK,        "break", true);
@@ -185,6 +182,7 @@ public class DiamondLexer {
         add(rg,Lexeme.PRIVATE,      "private", true);
         add(rg,Lexeme.PROTECTED,    "protected", true);
         add(rg,Lexeme.RAISE,        "raise", true);
+        add(rg,Lexeme.REPEAT,       "repeat", true);
         add(rg,Lexeme.RETURN,       "return", true);
         add(rg,Lexeme.SHORT,        "short", true);
         add(rg,Lexeme.STATIC,       "static", true);
@@ -197,7 +195,7 @@ public class DiamondLexer {
         add(rg,Lexeme.UNSAFE,       "unsafe", true);
         add(rg,Lexeme.VOID,         "void", true);
         add(rg,Lexeme.WHILE,        "while", true);
-        add(rg,Lexeme.YIELD,        "yield",true);
+        add(rg,Lexeme.YIELD,        "yield", true);
 
         add(rg,Lexeme.LEFT_BRACE,   "\\{");
         add(rg,Lexeme.RIGHT_BRACE,  "\\}");
