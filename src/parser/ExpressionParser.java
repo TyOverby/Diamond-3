@@ -29,12 +29,12 @@ final class ExpressionParser {
             parseOperators(precedence);
         }
         parseLists();
+
         // verify that the stream now consists entirely of expressions
+        List<Expression> toReturn = Lists.newArrayListWithCapacity(stream.size());
         for (int i = 0; i < stream.size(); i++) {
-            stream.set(i, marshalExpression(i));
+            toReturn.add(marshalExpression(i));
         }
-        @SuppressWarnings("unchecked")
-        List<Expression> toReturn = (List<Expression>) stream;
         return toReturn;
     }
 
