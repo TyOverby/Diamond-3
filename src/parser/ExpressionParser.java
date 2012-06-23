@@ -28,6 +28,7 @@ final class ExpressionParser {
         for (int precedence = 14; precedence > 0; precedence--) {
             parseOperators(precedence);
         }
+        parseVariableDeclarations();
         parseLists();
 
         // verify that the stream now consists entirely of expressions
@@ -159,10 +160,10 @@ final class ExpressionParser {
                                 // turn our (compound) array type into an identifier and bounce off of PERIOD
                                 ExpressionType type = getTypeEndingAt(i + 1);
                                 int typeLength = type.getNumberOfLexemes();
-                                subList = stream.subList(i - typeLength, i + 1);
+                                subList = stream.subList((i + 2) - typeLength, i + 2);
                                 subList.clear();
                                 subList.add(new Token<Lexeme>(Lexeme.IDENTIFIER, type.toString()));
-                                i -= typeLength;
+                                i -= (typeLength - 2);
                             } else {
                                 // not sure what else could be here?
                                 throw new ParseException("expected identifier, '[', or '.'");
@@ -308,6 +309,25 @@ final class ExpressionParser {
                 }
                 subList.clear();
                 subList.add(expression);
+            }
+        }
+    }
+
+    private void parseVariableDeclarations() throws ParseException {
+        for (int i = 0; i < stream.size(); i++) {
+            if (stream.get(i) instanceof Token) {
+                Token<Lexeme> token = marshalToken(i);
+                if (token.lexeme == Lexeme.IDENTIFIER) {
+                    // there should be a type immediately before us
+                    ExpressionType type = getTypeEndingAt(i - 1);
+                    int typeLength = type.getNumberOfLexemes();
+                    Set<Modifier> modifiers = getModifiersEndingAt((i - 1) - typeLength);
+                    Expression expression = new VariableDeclaration(type, token.contents, modifiers);
+                    List<Object> subList = stream.subList(i - typeLength - modifiers.size(), i);
+                    subList.clear();
+                    subList.add(expression);
+                    i -= (typeLength + modifiers.size());
+                }
             }
         }
     }
