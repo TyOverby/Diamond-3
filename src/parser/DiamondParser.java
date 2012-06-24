@@ -71,6 +71,8 @@ public final class DiamondParser {
                     parseBlock(typeDeclaration);
                     modifiers.clear();
                     break;
+                // TODO: method declarations; can probably implement this by switching on IDENTIFIER and checking for
+                // TODO: two identifiers in a row followed by an opening parenthesis
 
                 // statements followed by a block, but without modifiers
                 case DO:
