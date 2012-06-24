@@ -1,55 +1,238 @@
 package parser;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.*;
 import lexer.DiamondLexer.Lexeme;
 import lexer.Token;
+import parser.ExpressionParser.ParserState.Pointer;
 
 import java.math.BigInteger;
-import java.util.Deque;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
+import static com.google.common.base.Preconditions.*;
 
 final class ExpressionParser {
-    /*
-     * Intermediate expression parse states can consist of a heterogeneous stream of tokens and sub-expressions. As a
-     * result, we are forced to store the state in a List<Object>. At the beginning, the list consists entirely of
-     * tokens; at the end, if everything goes as planned, it should consist entirely of expressions.
-     */
-    private List<Object> stream;
+    static final class ParserState {
+        final class Pointer {
+            private int value;
+
+            private boolean invalidated;
+
+            private Pointer(int value) {
+                this.value = value;
+                invalidated = false;
+                checkArgument(isValid());
+            }
+
+            public Pointer inc() {
+                return inc(1);
+            }
+
+            public Pointer inc(int amount) {
+                Pointer pointer = new Pointer(value + amount);
+                pointers.put(value + amount, pointer);
+                return pointer;
+            }
+
+            public Pointer dec() {
+                return dec(1);
+            }
+
+            public Pointer dec(int amount) {
+                Pointer pointer = new Pointer(value - amount);
+                pointers.put(value - amount, pointer);
+                return pointer;
+            }
+
+            public boolean isValid() {
+                if (invalidated) {
+                    throw new AssertionError("invalidated pointer");
+                }
+                return (value >= 0 && value < stream.size());
+            }
+
+            private void invalidate() {
+                invalidated = true;
+            }
+        }
+
+        /**
+         * Intermediate expression parse states can consist of a heterogeneous stream of tokens and sub-expressions. As
+         * a result, we are forced to store the state in a List&lt;Object&gt;. At the beginning, the list consists
+         * entirely of tokens; at the end, if everything goes as planned, it should consist entirely of expressions.
+         */
+        private final List<Object> stream;
+
+        private final Multimap<Integer, Pointer> pointers;
+
+        private ParserState(List<Token<Lexeme>> tokens) {
+            stream = Lists.<Object>newArrayList(tokens);
+            pointers = HashMultimap.create();
+        }
+
+        public Pointer begin() {
+            Pointer pointer = new Pointer(0);
+            pointers.put(0, pointer);
+            return pointer;
+        }
+
+        public Pointer end() {
+            Pointer pointer = new Pointer(stream.size() - 1);
+            pointers.put(stream.size() - 1, pointer);
+            return pointer;
+        }
+
+        private Object dereference(Pointer pointer) {
+            checkArgument(pointer.isValid());
+            return stream.get(pointer.value);
+        }
+
+        public void replace(Pointer begin, Pointer end, Token<Lexeme> token) {
+            replaceImpl(begin, end, token);
+        }
+
+        public void replace(Pointer begin, Pointer end, Expression... expressions) {
+            replaceImpl(begin, end, expressions);
+        }
+
+        private void replaceImpl(Pointer begin, Pointer end, Object object) {
+            int beginIndex = begin.value;
+            int endIndex = end.value;
+
+            // perform the actual replacement
+            List<Object> subList = stream.subList(beginIndex, endIndex);
+            subList.clear();
+            subList.add(object);
+
+            // update all the pointers referring to the replaced range
+            for (int i = beginIndex; i < endIndex; i++) {
+                Iterable<Pointer> displaced = ImmutableSet.copyOf(pointers.get(i));
+                pointers.removeAll(i);
+                for (Pointer p : displaced) {
+                    p.value = beginIndex;
+                }
+                pointers.putAll(beginIndex, displaced);
+            }
+
+            // update all pointers with indices after the replaced range
+            int lengthChange = 1 - (endIndex - beginIndex);
+            for (int i = endIndex; i < (stream.size() + lengthChange); i++) {
+                Iterable<Pointer> displaced = ImmutableSet.copyOf(pointers.get(i));
+                pointers.removeAll(i);
+                for (Pointer p : displaced) {
+                    p.value = i + lengthChange;
+                }
+                pointers.putAll(i + lengthChange, displaced);
+            }
+        }
+
+        public void parseExpressionsInRange(Pointer begin, Pointer end) throws ParseException {
+            checkArgument(end.value > begin.value);
+            List<Token<Lexeme>> tokens = Lists.newArrayListWithCapacity(end.value - begin.value);
+            for (int i = begin.value; i < end.value; i++) {
+                tokens.add(marshalToken(new Pointer(i)));
+            }
+            List<Expression> expressions = new ExpressionParser().parseExpression(tokens);
+            for (int i = begin.value; i < end.value; i++) {
+                stream.set(i, expressions.get(i - begin.value));
+            }
+        }
+
+        public void delete(Pointer pointer) {
+            stream.remove(pointer.value);
+            for (Pointer p : pointers.get(pointer.value)) {
+                p.invalidate();
+            }
+            pointers.removeAll(pointer.value);
+            for (int i = (pointer.value + 1); i < (stream.size() + 1); i++) {
+                Iterable<Pointer> displaced = ImmutableSet.copyOf(pointers.get(i));
+                pointers.removeAll(i);
+                for (Pointer p : displaced) {
+                    p.value = i - 1;
+                }
+                pointers.putAll(i - 1, displaced);
+            }
+        }
+
+        public List<Expression> marshal() throws ParseException {
+            List<Expression> toReturn = Lists.newArrayListWithCapacity(stream.size());
+            Pointer pointer = begin();
+            while (pointer.isValid()) {
+                Expression expression = marshalExpression(pointer);
+                toReturn.add(expression);
+                pointer.inc();
+            }
+            return toReturn;
+        }
+
+        public boolean isToken(Pointer pointer) {
+            return (dereference(pointer) instanceof Token);
+        }
+
+        public Token<Lexeme> marshalToken(Pointer pointer) throws ParseException {
+            if (isToken(pointer)) {
+                @SuppressWarnings("unchecked")
+                Token<Lexeme> token = (Token<Lexeme>) dereference(pointer);
+                return token;
+            } else {
+                throw new ParseException("expected free token");
+            }
+        }
+
+        public boolean isExpression(Pointer pointer) {
+            return (dereference(pointer) instanceof Expression);
+        }
+
+        public Expression marshalExpression(Pointer pointer) throws ParseException {
+            if (isExpression(pointer)) {
+                return (Expression) dereference(pointer);
+            } else {
+                Token<Lexeme> token = marshalToken(pointer);
+                switch (token.lexeme) {
+                    case IDENTIFIER:
+                        return new IdentifierReference(token.contents);
+                    case INTEGRAL_LITERAL:
+                        BigInteger value;
+                        if (token.contents.startsWith("0x")) {
+                            value = new BigInteger(token.contents.substring(2), 16);
+                        } else {
+                            value = new BigInteger(token.contents);
+                        }
+                        return new IntegralLiteral(value);
+                    case STRING_LITERAL:
+                        return new StringLiteral(token.contents);
+                    default:
+                        throw new ParseException("expected expression");
+                }
+            }
+        }
+    }
+
+    private ParserState state;
 
     public ExpressionParser() {
     }
 
     public List<Expression> parseExpression(List<Token<Lexeme>> tokens) throws ParseException {
-        stream = Lists.<Object>newArrayList(tokens);
-        parseGroupedExpressions(tokens); // recursively parse parenthetical and bracketed expressions first
+        state = new ParserState(tokens);
+        parseGroupedExpressions(); // recursively parse parenthetical and bracketed expressions first
         parseGroupingOperators();
         for (int precedence = 14; precedence > 0; precedence--) {
             parseOperators(precedence);
         }
         parseVariableDeclarations();
         parseLists();
-
-        // verify that the stream now consists entirely of expressions
-        List<Expression> toReturn = Lists.newArrayListWithCapacity(stream.size());
-        for (int i = 0; i < stream.size(); i++) {
-            toReturn.add(marshalExpression(i));
-        }
-        return toReturn;
+        return state.marshal();
     }
 
     private static enum GroupingSymbol {
         PARENTHESIS, BRACKET
     }
 
-    private void parseGroupedExpressions(List<Token<Lexeme>> tokens) throws ParseException {
-        // use the TOKEN stream, since the state stream will change if we encounter grouping symbols
+    private void parseGroupedExpressions() throws ParseException {
         Deque<GroupingSymbol> groupingStack = Lists.newLinkedList(); // stack to handle nested grouping symbols
-        int startIndex = -1; // the starting index of the current outermost group
-        int streamOffset = 0; // offset between the state and token streams, increases as we replace tokens with expressions in the state stream
-        for (int i = 0; i < tokens.size(); i++) {
-            Token<Lexeme> token = tokens.get(i);
+        Pointer start = state.begin().dec(); // the starting index of the current outermost group
+        for (Pointer p = state.begin(); p.isValid(); p = p.inc()) {
+            Token<Lexeme> token = state.marshalToken(p);
             GroupingSymbol symbol;
             switch (token.lexeme) {
                 case LEFT_PAREN: case RIGHT_PAREN: symbol = GroupingSymbol.PARENTHESIS; break;
@@ -61,8 +244,8 @@ final class ExpressionParser {
             }
             switch (token.lexeme) {
                 case LEFT_PAREN: case LEFT_BRACKET:
-                    if (startIndex < 0) {
-                        startIndex = i + 1;
+                    if (!start.isValid()) {
+                        start = p.inc();
                     }
                     groupingStack.push(symbol);
                     break;
@@ -70,12 +253,8 @@ final class ExpressionParser {
                     if (groupingStack.pop() != symbol) {
                         throw new ParseException("mismatched grouping symbols");
                     } else if (groupingStack.isEmpty()) {
-                        List<Token<Lexeme>> group = tokens.subList(startIndex, i);
-                        List<Expression> subExpressions = new ExpressionParser().parseExpression(group);
-                        stream.subList(startIndex - streamOffset, i - streamOffset).clear();
-                        stream.addAll(startIndex - streamOffset, subExpressions);
-                        streamOffset += (group.size() - subExpressions.size());
-                        startIndex = -1;
+                        state.parseExpressionsInRange(start, p);
+                        start = state.begin().dec();
                     }
                     break;
             }
@@ -92,13 +271,14 @@ final class ExpressionParser {
         }
     }
 
-    private ExpressionType getTypeEndingAt(int index) throws ParseException {
-        switch (marshalToken(index).lexeme) {
+    private ExpressionType getTypeEndingAt(Pointer p) throws ParseException {
+        Token<Lexeme> token = state.marshalToken(p);
+        switch (token.lexeme) {
             case IDENTIFIER:
-                return new UserDefinedType(marshalToken(index).contents);
+                return new UserDefinedType(token.contents);
             case RIGHT_BRACKET:
-                ExpressionType elementType = getTypeEndingAt(index - 2);
-                if (marshalToken(index - 1).lexeme == Lexeme.LEFT_BRACKET) {
+                ExpressionType elementType = getTypeEndingAt(p.dec(2));
+                if (state.marshalToken(p.dec()).lexeme == Lexeme.LEFT_BRACKET) {
                     return new ArrayType(elementType);
                 } else {
                     throw new ParseException("expected '['");
@@ -116,12 +296,13 @@ final class ExpressionParser {
         }
     }
 
-    private Set<Modifier> getModifiersEndingAt(int index) throws ParseException {
+    private Set<Modifier> getModifiersEndingAt(Pointer p) throws ParseException {
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
         boolean flag = true;
         while (flag) {
-            if (stream.get(index) instanceof Token) {
-                Token<Lexeme> token = marshalToken(index--);
+            if (state.isToken(p)) {
+                Token<Lexeme> token = state.marshalToken(p);
+                p = p.dec();
                 if (Modifier.isModifier(token.lexeme)) {
                     modifiers.add(Modifier.fromLexeme(token.lexeme));
                     continue;
@@ -133,109 +314,96 @@ final class ExpressionParser {
     }
 
     private void parseGroupingOperators() throws ParseException {
-        for (int i = 0; i < stream.size(); i++) {
-            if (stream.get(i) instanceof Token) {
-                Token<Lexeme> token = marshalToken(i);
+        for (Pointer p = state.begin(); p.isValid(); p = p.inc()) {
+            if (state.isToken(p)) {
+                Token<Lexeme> token = state.marshalToken(p);
                 Expression target = null;
-                List<Object> subList;
                 switch (token.lexeme) {
                     case LEFT_BRACKET:
-                        if (stream.get(i + 1) instanceof Token && marshalToken(i + 1).lexeme == Lexeme.RIGHT_BRACKET) {
-                            if (marshalToken(i + 2).lexeme == Lexeme.IDENTIFIER) {
+                        if (state.isToken(p.inc()) && state.marshalToken(p.inc()).lexeme == Lexeme.RIGHT_BRACKET) {
+                            Token<Lexeme> farRightToken = state.marshalToken(p.inc().inc());
+                            if (farRightToken.lexeme == Lexeme.IDENTIFIER) {
                                 // variable declaration with an array type
-                                ExpressionType type = getTypeEndingAt(i + 1);
+                                ExpressionType type = getTypeEndingAt(p.inc());
                                 int typeLength = type.getNumberOfLexemes();
-                                Set<Modifier> modifiers = getModifiersEndingAt((i + 1) - typeLength);
-                                Expression expression = new VariableDeclaration(type, marshalToken(i + 2).contents, modifiers);
-                                subList = stream.subList(i - typeLength - modifiers.size(), i + 3);
-                                subList.clear();
-                                subList.add(expression);
-                                i -= (typeLength + modifiers.size());
+                                Set<Modifier> modifiers = getModifiersEndingAt(p.inc().dec(typeLength));
+                                Expression expression = new VariableDeclaration(type, farRightToken.contents, modifiers);
+                                state.replace(p.dec(typeLength).dec(modifiers.size()), p.inc(3), expression);
                                 break;
-                            } else if (marshalToken(i + 2).lexeme == Lexeme.LEFT_BRACKET) {
+                            } else if (farRightToken.lexeme == Lexeme.LEFT_BRACKET) {
                                 // well, we're in the middle of a multi-dimensional array type token
                                 // get out of here and let the next iteration do it
-                                i += 1;
+                                p = p.inc();
                                 break;
-                            } else if (marshalToken(i + 2).lexeme == Lexeme.PERIOD) {
+                            } else if (farRightToken.lexeme == Lexeme.PERIOD) {
                                 // member access on our array type
                                 // turn our (compound) array type into an identifier and bounce off of PERIOD
-                                ExpressionType type = getTypeEndingAt(i + 1);
+                                ExpressionType type = getTypeEndingAt(p.inc());
                                 int typeLength = type.getNumberOfLexemes();
-                                subList = stream.subList((i + 2) - typeLength, i + 2);
-                                subList.clear();
-                                subList.add(new Token<Lexeme>(Lexeme.IDENTIFIER, type.toString()));
-                                i -= (typeLength - 2);
+                                state.replace(p.inc(2).dec(typeLength), p.inc(2), new Token<>(Lexeme.IDENTIFIER, type.toString()));
                             } else {
                                 // not sure what else could be here?
                                 throw new ParseException("expected identifier, '[', or '.'");
                             }
                         } else {
                             // array access
-                            if (marshalToken(i + 2).lexeme != Lexeme.RIGHT_BRACKET) {
+                            if (state.marshalToken(p.inc(2)).lexeme != Lexeme.RIGHT_BRACKET) {
                                 throw new ParseException("expected ']'");
                             }
-                            Expression array = marshalExpression(i - 1);
-                            Expression index = marshalExpression(i + 1);
+                            Expression array = state.marshalExpression(p.dec());
+                            Expression index = state.marshalExpression(p.inc());
                             Expression arrayAccess = new ArrayAccess(array, index);
-                            subList = stream.subList(i - 1, i + 3);
-                            subList.clear();
-                            subList.add(arrayAccess);
-                            i -= 1;
+                            state.replace(p.dec(), p.inc(3), arrayAccess);
                             break;
                         }
                     case PERIOD:
                         // has to be a member access, let's figure out what kind
-                        if (marshalToken(i - 1).lexeme != Lexeme.IDENTIFIER) {
+                        if (state.marshalToken(p.dec()).lexeme != Lexeme.IDENTIFIER) {
                             throw new ParseException("expected identifier");
-                        } else if (marshalToken(i + 1).lexeme != Lexeme.IDENTIFIER && marshalToken(i + 1).lexeme != Lexeme.NEW) {
+                        } else if (state.marshalToken(p.inc()).lexeme != Lexeme.IDENTIFIER && state.marshalToken(p.inc()).lexeme != Lexeme.NEW) {
                             throw new ParseException("expected identifier or \"new\"");
                         }
-                        Token<Lexeme> farRightToken = marshalToken(i + 2);
+                        Token<Lexeme> farRightToken = state.marshalToken(p.inc(2));
                         if (farRightToken.lexeme == Lexeme.LEFT_PAREN) {
                             // method member access
                             // deliberately no break; let it be handled as a method invocation below
-                            target = marshalExpression(i - 1);
-                            i += 2;
+                            target = state.marshalExpression(p.dec());
+                            p = p.inc(2);
                         } else {
                             // field member access
                             // the field had better not be called new!
-                            if (marshalToken(i + 1).lexeme != Lexeme.IDENTIFIER) {
+                            Token<Lexeme> fieldName = state.marshalToken(p.inc());
+                            if (fieldName.lexeme != Lexeme.IDENTIFIER) {
                                 throw new ParseException("expected identifier");
                             }
-                            String field = marshalToken(i + 1).contents;
-                            Expression reference = new FieldReference(marshalExpression(i - 1), field);
-                            subList = stream.subList(i - 1, i + 2);
-                            subList.clear();
-                            subList.add(reference);
-                            i -= 1;
+                            Expression reference = new FieldReference(state.marshalExpression(p.dec()), fieldName.contents);
+                            state.replace(p.dec(), p.inc(2), reference);
                             break;
                         }
                     case LEFT_PAREN:
-                        Token<Lexeme> leftToken = marshalToken(i - 1);
+                        Token<Lexeme> leftToken = state.marshalToken(p.dec());
                         if (leftToken.lexeme == Lexeme.IDENTIFIER || leftToken.lexeme == Lexeme.NEW) {
                             // method or constructor invocation
                             List<Expression> parameters = Lists.newArrayList();
-                            int j = i + 1;
+                            Pointer q = p.inc();
                             while (true) {
-                                Object obj = stream.get(j++);
-                                if (obj instanceof Expression) {
-                                    parameters.add((Expression) obj);
+                                if (state.isExpression(q)) {
+                                    parameters.add(state.marshalExpression(q));
+                                    q = q.inc();
                                 } else {
                                     break;
                                 }
                             }
-                            if (marshalToken(j).lexeme != Lexeme.RIGHT_PAREN) {
+                            if (state.marshalToken(q).lexeme != Lexeme.RIGHT_PAREN) {
                                 throw new ParseException("expected ')'");
                             }
                             Expression invocation;
+                            Pointer begin;
                             if (target == null) {
                                 target = new ThisExpression();
-                                subList = stream.subList(i - 1, j + 1);
-                                i -= 1;
+                                begin = p.dec();
                             } else {
-                                subList = stream.subList(i - 3, j + 1);
-                                i -= 3;
+                                begin = p.dec(3);
                             }
                             if (leftToken.lexeme == Lexeme.IDENTIFIER) {
                                 invocation = new MethodInvocation(leftToken.contents, target, parameters);
@@ -244,17 +412,14 @@ final class ExpressionParser {
                             } else {
                                 throw new AssertionError("Left token MUST either be an identifier or \"new\"!");
                             }
-                            subList.clear();
-                            subList.add(invocation);
+                            state.replace(begin, q.inc(), invocation);
                         } else {
                             // simple parenthetical expression
-                            Expression expression = marshalExpression(i + 1);
-                            if (marshalToken(i + 2).lexeme != Lexeme.RIGHT_PAREN) {
+                            Expression expression = state.marshalExpression(p.inc());
+                            if (state.marshalToken(p.inc(2)).lexeme != Lexeme.RIGHT_PAREN) {
                                 throw new ParseException("expected ')'");
                             }
-                            subList = stream.subList(i, i + 3);
-                            subList.clear();
-                            subList.add(expression);
+                            state.replace(p, p.inc(3), expression);
                         }
                         break;
                 }
@@ -265,44 +430,45 @@ final class ExpressionParser {
     private void parseOperators(int precedence) throws ParseException {
         if (precedence == 1 || precedence == 2 || precedence == 13 || precedence == 14) {
             // right associative
-            for (int i = stream.size() - 1; i >= 0; i--) {
-                parseOperatorAtIndex(precedence, i);
+            for (Pointer p = state.end(); p.isValid(); p = p.dec()) {
+                parseOperatorAtIndex(precedence, p);
             }
         } else {
             // left associative
-            for (int i = 0; i < stream.size(); i++) {
-                parseOperatorAtIndex(precedence, i);
+            for (Pointer p = state.begin(); p.isValid(); p = p.inc()) {
+                parseOperatorAtIndex(precedence, p);
             }
         }
     }
 
-    private void parseOperatorAtIndex(int precedence, int i) throws ParseException {
-        if (stream.get(i) instanceof Token) {
-            Token<Lexeme> token = marshalToken(i);
+    private void parseOperatorAtIndex(int precedence, Pointer p) throws ParseException {
+        if (state.isToken(p)) {
+            Token<Lexeme> token = state.marshalToken(p);
             Operator operator = Operator.getForLexeme(token.lexeme);
             if (operator != null && operator.getPrecedence() == precedence) {
-                List<Object> subList;
+                Pointer begin;
+                Pointer end;
                 Expression expression;
                 switch (operator.getType()) {
                     case POSTFIX:
-                        subList = stream.subList(i - 1, i + 1);
-                        expression = new OperatorExpression(marshalExpression(i - 1), operator);
-                        i -= 1;
+                        begin = p.dec();
+                        end = p.inc();
+                        expression = new OperatorExpression(state.marshalExpression(begin), operator);
                         break;
                     case UNARY:
-                        subList = stream.subList(i, i + 2);
-                        expression = new OperatorExpression(operator, marshalExpression(i + 1));
+                        begin = p;
+                        end = p.inc(2);
+                        expression = new OperatorExpression(operator, state.marshalExpression(end.dec()));
                         break;
                     case BINARY:
-                        subList = stream.subList(i - 1, i + 2);
-                        expression = new OperatorExpression(marshalExpression(i - 1), marshalExpression(i + 1), operator);
-                        i -= 1;
+                        begin = p.dec();
+                        end = p.inc(2);
+                        expression = new OperatorExpression(state.marshalExpression(begin), state.marshalExpression(end.dec()), operator);
                         break;
                     default:
                         throw new AssertionError();
                 }
-                subList.clear();
-                subList.add(expression);
+                state.replace(begin, end, expression);
             }
         }
     }
@@ -311,73 +477,33 @@ final class ExpressionParser {
      * TODO: this really isn't correct, it needs to be handled in marshalExpression()
      */
     private void parseVariableDeclarations() throws ParseException {
-        for (int i = 0; i < stream.size(); i++) {
-            if (stream.get(i) instanceof Token) {
-                Token<Lexeme> token = marshalToken(i);
+        for (Pointer p = state.begin(); p.isValid(); p = p.inc()) {
+            if (state.isToken(p)) {
+                Token<Lexeme> token = state.marshalToken(p);
                 if (token.lexeme == Lexeme.IDENTIFIER) {
                     // there should be a type immediately before us
-                    ExpressionType type = getTypeEndingAt(i - 1);
+                    ExpressionType type = getTypeEndingAt(p.dec());
                     int typeLength = type.getNumberOfLexemes();
-                    Set<Modifier> modifiers = getModifiersEndingAt((i - 1) - typeLength);
+                    Set<Modifier> modifiers = getModifiersEndingAt(p.dec().dec(typeLength));
                     Expression expression = new VariableDeclaration(type, token.contents, modifiers);
-                    List<Object> subList = stream.subList(i - typeLength - modifiers.size(), i + 1);
-                    subList.clear();
-                    subList.add(expression);
-                    i -= (typeLength + modifiers.size());
+                    state.replace(p.dec(typeLength).dec(modifiers.size()), p.inc(), expression);
                 }
             }
         }
     }
 
     private void parseLists() throws ParseException {
-        for (int i = 0; i < stream.size(); i++) {
-            if (stream.get(i) instanceof Token) {
-                Token<Lexeme> token = marshalToken(i);
+        for (Pointer p = state.begin(); p.isValid(); p = p.inc()) {
+            if (state.isToken(p)) {
+                Token<Lexeme> token = state.marshalToken(p);
                 if (token.lexeme == Lexeme.COMMA) {
                     // ensure that we're between two expressions
-                    stream.set(i - 1, marshalExpression(i - 1));
-                    stream.set(i + 1, marshalExpression(i + 1));
+                    // XXX: marshalling expressions needs to modify the stream as was planned
+                    state.marshalExpression(p.dec());
+                    state.marshalExpression(p.inc());
                     // then we can delete this token so that the main parsing succeeds
-                    stream.remove(i);
-                    i -= 1;
+                    state.delete(p);
                 }
-            }
-        }
-    }
-
-    private Token<Lexeme> marshalToken(int index) throws ParseException {
-        Object obj = stream.get(index);
-        if (obj instanceof Token) {
-            @SuppressWarnings("unchecked")
-            Token<Lexeme> token = (Token<Lexeme>) stream.get(index);
-            return token;
-        } else {
-            throw new ParseException("expected free token");
-        }
-    }
-
-    private Expression marshalExpression(int index) throws ParseException {
-        Object obj = stream.get(index);
-        if (obj instanceof Expression) {
-            return (Expression) obj;
-        } else {
-            @SuppressWarnings("unchecked")
-            Token<Lexeme> token = (Token<Lexeme>) obj;
-            switch (token.lexeme) {
-                case IDENTIFIER:
-                    return new IdentifierReference(token.contents);
-                case INTEGRAL_LITERAL:
-                    BigInteger value;
-                    if (token.contents.startsWith("0x")) {
-                        value = new BigInteger(token.contents.substring(2), 16);
-                    } else {
-                        value = new BigInteger(token.contents);
-                    }
-                    return new IntegralLiteral(value);
-                case STRING_LITERAL:
-                    return new StringLiteral(token.contents);
-                default:
-                    throw new ParseException("expected expression");
             }
         }
     }
