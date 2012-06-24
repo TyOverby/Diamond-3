@@ -31,20 +31,34 @@ public final class DiamondParser {
         return compilationUnit;
     }
 
+    /*
+     * As this method moves through the token stream, it maintains buffer and modifiers, two collections that provide
+     * some context for subsequent statements and expressions. buffer is a list of tokens which do not form a statement
+     * and thus must constitute an expression, which will be parsed when that expression is terminated by a semicolon.
+     * It must be empty after every loop iteration other than an iteration which adds to the buffer; this is kept track
+     * of with the bufferAllowed flag. modifiers similarly stores previous modifiers, which may be applied to either a
+     * future statement (method or type declaration) or a future expression (variable declaration). It has a similar
+     * flag, as it must also be kept empty unless the current token was immediately preceded by other modifiers.
+     */
     private void parse(Statement context) throws ParseException {
         List<Token<Lexeme>> buffer = Lists.newArrayList();
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        boolean modifiersAllowed = false; // set to true if we run into a modifier
         while (pos < tokens.size()) {
             Token<Lexeme> token = tokens.get(++pos);
+            boolean bufferAllowed = false; // provisionally, unless we add a token to the buffer
+
+            // check to see if this is a modifier
+            if (Modifier.isModifier(token.lexeme)) {
+                modifiers.add(Modifier.fromLexeme(token.lexeme));
+                modifiersAllowed = true;
+                continue;
+            }
+
+            // everything else we need to check for
             Expression condition; // since we need it in multiple cases
+            boolean inExpression = false; // assume we aren't for now
             switch (token.lexeme) {
-                // modifiers
-                case PRIVATE:
-                    modifiers.add(Modifier.PRIVATE);
-                    break;
-                case STATIC:
-                    modifiers.add(Modifier.STATIC);
-                    break;
                 // statements preceded by modifiers and followed by a block
                 case CLASS:
                     Token<Lexeme> typeName = tokens.get(++pos);
@@ -55,7 +69,9 @@ public final class DiamondParser {
                     }
                     Statement typeDeclaration = new TypeDeclaration((CompilationUnit) context, typeName.contents, modifiers);
                     parseBlock(typeDeclaration);
+                    modifiers.clear();
                     break;
+
                 // statements followed by a block, but without modifiers
                 case DO:
                     int doIndex = pos; // index of the "do" keyword
@@ -99,6 +115,7 @@ public final class DiamondParser {
                     Statement whileLoop = new WhileLoop(context, condition);
                     parseBlock(whileLoop);
                     break;
+
                 // statements not followed by a block
                 case BREAK:
                     if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
@@ -132,6 +149,7 @@ public final class DiamondParser {
                         new ReturnStatement(context, returnValue);
                     }
                     break;
+
                 // control characters
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
@@ -152,9 +170,26 @@ public final class DiamondParser {
                     } else if (!expressions.isEmpty()) {
                         expressions.get(0).attach(context);
                     }
+                    buffer.clear();
+                    modifiers.clear();
                     break;
                 case LEFT_BRACE:
                     throw new ParseException("expected type declaration, if/else, or loop");
+
+                // everything else, which basically means tokens that are part of an expression
+                default:
+                    buffer.add(token);
+                    bufferAllowed = true;
+            }
+
+            if (!bufferAllowed && !buffer.isEmpty()) {
+                // if the buffer is not empty but we encountered a statement, throw an exception
+                throw new ParseException(buffer.size() + " unexpected token(s) preceding statement");
+            } else if (!modifiersAllowed && !modifiers.isEmpty()) {
+                // if there are modifiers that are unaccounted for
+                throw new ParseException("unexpected modifiers preceding statement: " + modifiers);
+            } else {
+                modifiersAllowed = false;
             }
         }
         throw new ParseException("expected '}'");

@@ -117,14 +117,12 @@ final class ExpressionParser {
         while (flag) {
             if (stream.get(index) instanceof Token) {
                 Token<Lexeme> token = marshalToken(index--);
-                switch (token.lexeme) {
-                    case PRIVATE: modifiers.add(Modifier.PRIVATE); break;
-                    case STATIC: modifiers.add(Modifier.STATIC); break;
-                    default: flag = false;
+                if (Modifier.isModifier(token.lexeme)) {
+                    modifiers.add(Modifier.fromLexeme(token.lexeme));
+                    continue;
                 }
-            } else {
-                flag = false;
             }
+            flag = false;
         }
         return modifiers;
     }

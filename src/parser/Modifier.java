@@ -1,5 +1,7 @@
 package parser;
 
+import lexer.DiamondLexer.Lexeme;
+
 public enum Modifier {
     PRIVATE(false, true, true), STATIC(false, true, true);
 
@@ -25,5 +27,26 @@ public enum Modifier {
 
     public boolean modifiesVariables() {
         return modifiesVariables;
+    }
+
+    public static boolean isModifier(Lexeme lexeme) {
+        switch (lexeme) {
+            case PRIVATE:
+            case STATIC:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static Modifier fromLexeme(Lexeme lexeme) throws ParseException {
+        switch (lexeme) {
+            case PRIVATE:
+                return Modifier.PRIVATE;
+            case STATIC:
+                return Modifier.STATIC;
+            default:
+                throw new ParseException("expected modifier");
+        }
     }
 }
