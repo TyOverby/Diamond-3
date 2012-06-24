@@ -50,8 +50,10 @@ public final class DiamondParser {
                     Token<Lexeme> typeName = tokens.get(++pos);
                     if (typeName.lexeme != Lexeme.IDENTIFIER) {
                         throw new ParseException("expected identifier");
+                    } else if (!(context instanceof CompilationUnit)) {
+                        throw new ParseException("nested types are not yet supported");
                     }
-                    Statement typeDeclaration = new TypeDeclaration(context, typeName.contents, modifiers);
+                    Statement typeDeclaration = new TypeDeclaration((CompilationUnit) context, typeName.contents, modifiers);
                     parseBlock(typeDeclaration);
                     break;
                 // statements followed by a block, but without modifiers

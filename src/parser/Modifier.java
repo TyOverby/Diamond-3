@@ -1,7 +1,7 @@
 package parser;
 
 public enum Modifier {
-    PRIVATE(true, true, true), STATIC(false, true, true);
+    PRIVATE(false, true, true), STATIC(false, true, true);
 
     private final boolean modifiesTypes;
 

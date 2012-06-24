@@ -8,7 +8,6 @@ package parser;
 
 import com.google.common.collect.Sets;
 
-import java.util.EnumSet;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.*;
@@ -18,21 +17,14 @@ public final class TypeDeclaration extends Statement {
 
     private final Set<Modifier> modifiers;
 
-    public TypeDeclaration(Statement parent, String name, Set<Modifier> modifiers) throws ParseException {
+    public TypeDeclaration(CompilationUnit parent, String name, Set<Modifier> modifiers) throws ParseException {
         super(parent);
         checkNotNull(name);
         checkNotNull(modifiers);
         for (Modifier modifier : modifiers) {
             checkArgument(modifier.modifiesTypes());
         }
-        if (parent instanceof CompilationUnit) {
-            checkArgument(modifiers.isEmpty());
-        }
         this.name = name;
         this.modifiers = Sets.immutableEnumSet(modifiers);
-    }
-
-    public String getName() {
-        return name;
     }
 }
