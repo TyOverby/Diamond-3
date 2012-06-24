@@ -97,7 +97,12 @@ final class ExpressionParser {
             case IDENTIFIER:
                 return new UserDefinedType(marshalToken(index).contents);
             case RIGHT_BRACKET:
-                return new ArrayType(getTypeEndingAt(index - 2));
+                ExpressionType elementType = getTypeEndingAt(index - 2);
+                if (marshalToken(index - 1).lexeme == Lexeme.LEFT_BRACKET) {
+                    return new ArrayType(elementType);
+                } else {
+                    throw new ParseException("expected '['");
+                }
             case BOOLEAN:
                 return BuiltInType.BOOLEAN;
             case SHORT:

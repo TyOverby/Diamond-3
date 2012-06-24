@@ -59,20 +59,81 @@ public final class DiamondParser {
             // everything else we need to check for
             Expression condition; // since we need it in multiple cases
             switch (token.lexeme) {
-                // statements preceded by modifiers and followed by a block
-                case CLASS:
-                    Token<Lexeme> typeName = tokens.get(++pos);
-                    if (typeName.lexeme != Lexeme.IDENTIFIER) {
-                        throw new ParseException("expected identifier");
-                    } else if (!(context instanceof CompilationUnit)) {
-                        throw new ParseException("nested types are not yet supported");
+                // control characters
+                case LEFT_BRACE:
+                    if (blockExpected) {
+                        inBlock = true;
+                        blockExpected = false;
+                        break;
+                    } else {
+                        throw new ParseException("unexpected '{'");
                     }
-                    Statement typeDeclaration = new TypeDeclaration((CompilationUnit) context, typeName.contents, modifiers);
-                    parse(typeDeclaration, true);
+                case RIGHT_BRACE:
+                    if (!buffer.isEmpty() || !modifiers.isEmpty()) {
+                        throw new ParseException("expected statement or ';'");
+                    } else if (inBlock) {
+                        return;
+                    } else {
+                        throw new ParseException("unexpected '}'");
+                    }
+                case SEMICOLON:
+                    // this means that everything in buffer constitutes an expression
+                    // expressions can have modifiers too, so insert them back into the buffer since we took them out
+                    for (Modifier modifier : modifiers) {
+                        switch (modifier) {
+                            case PRIVATE: buffer.add(0, new Token<>(Lexeme.PRIVATE, "private")); break;
+                            case STATIC: buffer.add(0, new Token<>(Lexeme.STATIC, "static")); break;
+                            default: throw new UnsupportedOperationException("unknown modifier");
+                        }
+                    }
+                    List<Expression> expressions = new ExpressionParser().parseExpression(buffer);
+                    if (expressions.size() > 1) {
+                        throw new ParseException("expected ';'");
+                    } else if (!expressions.isEmpty()) {
+                        expressions.get(0).attach(context);
+                    }
+                    buffer.clear();
                     modifiers.clear();
                     break;
-                // TODO: method declarations; can probably implement this by switching on IDENTIFIER and checking for
-                // TODO: two identifiers in a row followed by an opening parenthesis
+
+                // statements not followed by a block; these must all be followed by a semicolon
+                case BREAK:
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    new BreakStatement(context);
+                    break;
+                case CONTINUE:
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    new ContinueStatement(context);
+                    break;
+                case DELETE:
+                    // there must be an expression, specifically a variable reference, immediately to the right
+                    Expression identifierReference = getAdjacentExpression(false);
+                    if (!(identifierReference instanceof IdentifierReference)) {
+                        throw new ParseException("expected variable reference");
+                    }
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    new DeleteStatement(context, (IdentifierReference) identifierReference);
+                    break;
+                case RETURN:
+                    // there are two variants, with and without a value
+                    if (tokens.get(pos + 1).lexeme == Lexeme.SEMICOLON) {
+                        // no value
+                        new ReturnStatement(context);
+                    } else {
+                        // with value
+                        Expression returnValue = getAdjacentExpression(false);
+                        new ReturnStatement(context, returnValue);
+                    }
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    break;
 
                 // statements followed by a block (or a single statement or expression), but without modifiers
                 case DO:
@@ -118,81 +179,45 @@ public final class DiamondParser {
                     parse(whileLoop, true);
                     break;
 
-                // statements not followed by a block; these must all be followed by a semicolon
-                case BREAK:
-                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
-                        throw new ParseException("expected ';'");
+                // statements preceded by modifiers and followed by a block
+                case CLASS:
+                    Token<Lexeme> typeName = tokens.get(++pos);
+                    if (typeName.lexeme != Lexeme.IDENTIFIER) {
+                        throw new ParseException("expected identifier");
+                    } else if (!(context instanceof CompilationUnit)) {
+                        throw new ParseException("nested types are not yet supported");
                     }
-                    new BreakStatement(context);
-                    break;
-                case CONTINUE:
-                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
-                        throw new ParseException("expected ';'");
-                    }
-                    new ContinueStatement(context);
-                    break;
-                case DELETE:
-                    // there must be an expression, specifically a variable reference, immediately to the right
-                    Expression identifierReference = getAdjacentExpression(false);
-                    if (!(identifierReference instanceof IdentifierReference)) {
-                        throw new ParseException("expected variable reference");
-                    }
-                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
-                        throw new ParseException("expected ';'");
-                    }
-                    new DeleteStatement(context, (IdentifierReference) identifierReference);
-                    break;
-                case RETURN:
-                    // there are two variants, with and without a value
-                    if (tokens.get(pos + 1).lexeme == Lexeme.SEMICOLON) {
-                        // no value
-                        new ReturnStatement(context);
-                    } else {
-                        // with value
-                        Expression returnValue = getAdjacentExpression(false);
-                        new ReturnStatement(context, returnValue);
-                    }
-                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
-                        throw new ParseException("expected ';'");
-                    }
-                    break;
-
-                // control characters
-                case LEFT_BRACE:
-                    if (blockExpected) {
-                        inBlock = true;
-                        blockExpected = false;
-                        break;
-                    } else {
-                        throw new ParseException("unexpected '{'");
-                    }
-                case RIGHT_BRACE:
-                    if (!buffer.isEmpty() || !modifiers.isEmpty()) {
-                        throw new ParseException("expected statement or ';'");
-                    } else if (inBlock) {
-                        return;
-                    } else {
-                        throw new ParseException("unexpected '}'");
-                    }
-                case SEMICOLON:
-                    // this means that everything in buffer constitutes an expression
-                    // expressions can have modifiers too, so insert them back into the buffer since we took them out
-                    for (Modifier modifier : modifiers) {
-                        switch (modifier) {
-                            case PRIVATE: buffer.add(0, new Token<>(Lexeme.PRIVATE, "private")); break;
-                            case STATIC: buffer.add(0, new Token<>(Lexeme.STATIC, "static")); break;
-                            default: throw new UnsupportedOperationException("unknown modifier");
-                        }
-                    }
-                    List<Expression> expressions = new ExpressionParser().parseExpression(buffer);
-                    if (expressions.size() > 1) {
-                        throw new ParseException("expected ';'");
-                    } else if (!expressions.isEmpty()) {
-                        expressions.get(0).attach(context);
-                    }
-                    buffer.clear();
+                    Statement typeDeclaration = new TypeDeclaration((CompilationUnit) context, typeName.contents, modifiers);
+                    parse(typeDeclaration, true);
                     modifiers.clear();
                     break;
+                case IDENTIFIER:
+                    // we're checking for method declarations, but identifiers can appear in other contexts
+                    Token<Lexeme> rightToken = tokens.get(pos + 1);
+                    if (rightToken.lexeme == Lexeme.LEFT_PAREN) {
+                        // assume we're dealing with a method declaration for now
+                        String name = token.contents;
+                        ExpressionType returnType = findTypeTokenEndingAt(pos - 1);
+                        if (returnType != null) {
+                            pos += 1;
+                            List<Expression> adjacentExpressions = getAdjacentExpressions(true);
+                            List<VariableDeclaration> parameters = Lists.newArrayListWithCapacity(adjacentExpressions.size());
+                            for (Expression adjacentExpression : adjacentExpressions) {
+                                if (adjacentExpression instanceof VariableDeclaration) {
+                                    parameters.add((VariableDeclaration) adjacentExpression);
+                                } else {
+                                    throw new ParseException("expected variable declaration");
+                                }
+                            }
+                            if (!(context instanceof TypeDeclaration)) {
+                                throw new ParseException("methods may only be declared directly under a type declaration");
+                            }
+                            Statement methodDeclaration = new MethodDeclaration((TypeDeclaration) context, name, returnType, modifiers, parameters);
+                            parse(methodDeclaration, true);
+                            break;
+                        }
+                    }
+                    // this is deliberately at the end so that it drops down to default
 
                 // everything else, which basically means tokens that are part of an expression
                 default:
@@ -268,6 +293,29 @@ public final class DiamondParser {
         throw new ParseException("expected '}'");
     }
 
+    private ExpressionType findTypeTokenEndingAt(int pos) throws ParseException {
+        Token<Lexeme> token = tokens.get(pos);
+        switch (token.lexeme) {
+            case BOOLEAN:
+                return BuiltInType.BOOLEAN;
+            case SHORT:
+                return BuiltInType.SHORT;
+            case INT:
+                return BuiltInType.INT;
+            case LONG:
+                return BuiltInType.LONG;
+            case IDENTIFIER:
+                return new UserDefinedType(token.contents);
+            case RIGHT_BRACKET:
+                ExpressionType elementType = findTypeTokenEndingAt(pos - 2);
+                if (elementType != null && tokens.get(pos - 1).lexeme == Lexeme.LEFT_BRACKET) {
+                    return new ArrayType(elementType);
+                }
+            default:
+                return null;
+        }
+    }
+
     /**
      * <p>
      *     Returns the single expression adjacent to the current position, beginning immediately following {@code pos}
@@ -294,8 +342,28 @@ public final class DiamondParser {
      * @throws ParseException if multiple or no adjacent expressions are found; or, if {@code requiresParentheses} is
      *                        {@code true} and either the starting or ending parenthesis around the expression is
      *                        missing
+     * @see #getAdjacentExpressions(boolean)
      */
     private Expression getAdjacentExpression(boolean requiresParentheses) throws ParseException {
+        List<Expression> expressions = getAdjacentExpressions(requiresParentheses);
+        if (expressions.size() != 1) {
+            throw new ParseException("expected a single expression; saw " + expressions.size());
+        } else {
+            return expressions.get(0);
+        }
+    }
+
+    /**
+     * Identical to {@link #getAdjacentExpression(boolean)}, but this method may return any number of adjacent
+     * expressions in a list, including zero expressions, without throwing a {@code ParseException}.
+     *
+     * @param requiresParentheses whether the adjacent expressions must be contained in a pair of parentheses
+     * @return a list of zero or more expressions adjacent to the current position
+     * @throws ParseException if {@code requiresParentheses} is {@code true} and either the starting or ending
+     *                        parenthesis around the expression is missing
+     * @see #getAdjacentExpression(boolean)
+     */
+    private List<Expression> getAdjacentExpressions(boolean requiresParentheses) throws ParseException {
         List<Token<Lexeme>> expressionTokens = null;
         int beginIndex = (pos + 1);
         boolean done = false;
@@ -332,11 +400,6 @@ public final class DiamondParser {
             char expected = (requiresParentheses ? ')' : ';');
             throw new ParseException(String.format("expected '%c'", expected));
         }
-        List<Expression> expressions = new ExpressionParser().parseExpression(expressionTokens);
-        if (expressions.size() != 1) {
-            throw new ParseException("expected a single expression; saw " + expressions.size());
-        } else {
-            return expressions.get(0);
-        }
+        return new ExpressionParser().parseExpression(expressionTokens);
     }
 }
