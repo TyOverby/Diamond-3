@@ -13,7 +13,7 @@ public final class DiamondParser {
     private List<Token<Lexeme>> tokens;
 
     /**
-     * The index of the LAST token read within the tokens list.
+     * The index of the <i>last</i> token read within the tokens list.
      */
     private int pos;
 
@@ -63,7 +63,7 @@ public final class DiamondParser {
                     int whileIndex = findDoWhile(); // index of the "while" keyword
                     int endIndex; // index of the semicolon at the end
                     pos = whileIndex;
-                    condition = getParentheticalExpression();
+                    condition = getAdjacentExpression(true);
                     if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
                         throw new ParseException("expected ';'");
                     }
@@ -81,26 +81,58 @@ public final class DiamondParser {
                     // TODO: this one is trickier, so do it later
                     break;
                 case IF:
-                    condition = getParentheticalExpression();
+                    condition = getAdjacentExpression(true);
                     Statement ifStatement = new IfStatement(context, condition);
                     parseBlock(ifStatement);
                     break;
                 case REPEAT:
-                    Expression repeatCount = getParentheticalExpression();
+                    Expression repeatCount = getAdjacentExpression(true);
                     Statement repeatLoop = new RepeatLoop(context, repeatCount);
                     parseBlock(repeatLoop);
                     break;
                 case SWITCH:
-                    Expression value = getParentheticalExpression();
+                    Expression value = getAdjacentExpression(true);
                     Statement switchStatement = new SwitchStatement(context, value);
                     parseBlock(switchStatement);
                     break;
                 case WHILE:
-                    condition = getParentheticalExpression();
+                    condition = getAdjacentExpression(true);
                     Statement whileLoop = new WhileLoop(context, condition);
                     parseBlock(whileLoop);
                     break;
-                // TODO: statements not followed by a block
+                // statements not followed by a block
+                case BREAK:
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    new BreakStatement(context);
+                    break;
+                case CONTINUE:
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    new ContinueStatement(context);
+                    break;
+                case DELETE:
+                    // there must be an expression, specifically a variable reference, immediately to the right
+                    Expression identifierReference = getAdjacentExpression(false);
+                    if (!(identifierReference instanceof IdentifierReference)) {
+                        throw new ParseException("expected variable reference");
+                    }
+                    new DeleteStatement(context, (IdentifierReference) identifierReference);
+                    break;
+                case RETURN:
+                    // there are two variants, with and without a value
+                    if (tokens.get(pos + 1).lexeme == Lexeme.SEMICOLON) {
+                        // no value
+                        new ReturnStatement(context);
+                        pos += 1;
+                    } else {
+                        // with value
+                        Expression returnValue = getAdjacentExpression(false);
+                        new ReturnStatement(context, returnValue);
+                    }
+                    break;
                 // control characters
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
@@ -194,41 +226,74 @@ public final class DiamondParser {
     }
 
     /**
-     * Returns the expression found in parenthesis at the current position, with the left parenthesis immediately
-     * following {@code pos}. In this context, the parentheses are mandatory, and a {@code ParseException} will be
-     * thrown if there is no left parenthesis immediately following {@code pos}. Expressions of this type are found as
-     * part of the {@code if}, {@code do}, {@code while}, {@code repeat}, and {@code switch} statements.
+     * <p>
+     *     Returns the single expression adjacent to the current position, beginning immediately following {@code pos}
+     *     (since {@code pos} is the index of the <i>last</i> token read). If no expression is found, or if there are
+     *     multiple comma-separated expressions, {@code ParseException} will be thrown. This method has two variants,
+     *     which are distinguished by the value of the {@code boolean} parameter.
+     * </p>
+     * <p>
+     *     If {@code requiresParentheses} is {@code true}, the method will check that the expression is surrounded by a
+     *     pair of parentheses; a {@code ParseException} is thrown if they are missing. This variant is used to parse
+     *     the {@code if}, {@code do}, {@code while}, {@code repeat}, and {@code switch} statements, all of which
+     *     require parentheses around a condition or value. The expression is deemed to have ended when the final
+     *     enclosing right parenthesis is reached.
+     * </p>
+     * <p>
+     *     If {@code requiresParentheses} is {@code false}, the method will not check for parentheses around the
+     *     expression, though they may still be used, as in any other expression. This variant is used to parse the
+     *     {@code delete} and {@code return} statements. The expression is deemed to have ended when a semicolon is
+     *     reached.
+     * </p>
      *
-     * @return the parenthetical expression immediately following {@code pos}
-     * @throws ParseException if either the starting or ending parenthesis is missing; or if multiple or no expressions
-     *                        are found
+     * @param requiresParentheses whether the adjacent expression must be contained in a pair of parentheses
+     * @return the single expression adjacent to the current position
+     * @throws ParseException if multiple or no adjacent expressions are found; or, if {@code requiresParentheses} is
+     *                        {@code true} and either the starting or ending parenthesis around the expression is
+     *                        missing
      */
-    private Expression getParentheticalExpression() throws ParseException {
-        if (tokens.get(++pos).lexeme != Lexeme.LEFT_PAREN) {
-            throw new ParseException("expected '('");
-        }
+    private Expression getAdjacentExpression(boolean requiresParentheses) throws ParseException {
+        List<Token<Lexeme>> expressionTokens = null;
         int beginIndex = (pos + 1);
-        int depth = 1;
-        while (pos < tokens.size()) {
-            Token<Lexeme> token = tokens.get(++pos);
-            switch (token.lexeme) {
-                case LEFT_PAREN:
-                    depth++;
-                    break;
-                case RIGHT_PAREN:
-                    depth--;
-                    break;
+        boolean done = false;
+        if (requiresParentheses) {
+            if (tokens.get(++pos).lexeme != Lexeme.LEFT_PAREN) {
+                throw new ParseException("expected '('");
             }
-            if (depth == 0) {
-                List<Token<Lexeme>> expressionTokens = tokens.subList(beginIndex, pos);
-                List<Expression> expressions = new ExpressionParser().parseExpression(expressionTokens);
-                if (expressions.size() != 1) {
-                    throw new ParseException("expected a single expression; saw " + expressions.size());
-                } else {
-                    return expressions.get(0);
+            int depth = 1;
+            while (pos < tokens.size() && !done) {
+                switch (tokens.get(++pos).lexeme) {
+                    case LEFT_PAREN:
+                        depth++;
+                        break;
+                    case RIGHT_PAREN:
+                        depth--;
+                        break;
+                }
+                if (depth == 0) {
+                    expressionTokens = tokens.subList(beginIndex, pos + 1);
+                    done = true;
+                }
+            }
+        } else {
+            while (pos < tokens.size() && !done) {
+                switch (tokens.get(++pos).lexeme) {
+                    case SEMICOLON:
+                        expressionTokens = tokens.subList(beginIndex, pos);
+                        done = true;
+                        break;
                 }
             }
         }
-        throw new ParseException("expected ')'");
+        if (expressionTokens == null) {
+            char expected = (requiresParentheses ? ')' : ';');
+            throw new ParseException(String.format("expected '%c'", expected));
+        }
+        List<Expression> expressions = new ExpressionParser().parseExpression(expressionTokens);
+        if (expressions.size() != 1) {
+            throw new ParseException("expected a single expression; saw " + expressions.size());
+        } else {
+            return expressions.get(0);
+        }
     }
 }

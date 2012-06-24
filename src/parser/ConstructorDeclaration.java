@@ -8,6 +8,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.*;
 
+// TODO: this should extend MethodDeclaration
 public final class ConstructorDeclaration extends Statement {
     private final ExpressionType returnType;
 
