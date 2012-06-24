@@ -14,7 +14,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.*;
 
-public final class MethodDeclaration extends Statement {
+public class MethodDeclaration extends Statement {
     private final String name;
 
     private final ExpressionType returnType;

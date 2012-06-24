@@ -12,7 +12,7 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.*;
 
-public final class MethodInvocation extends Expression {
+public class MethodInvocation extends Expression {
     private final String method;
 
     private final Expression target;
@@ -24,7 +24,6 @@ public final class MethodInvocation extends Expression {
         checkNotNull(method);
         checkNotNull(target);
         checkNotNull(parameters);
-        checkArgument(!target.getType().isPrimitive());
         for (Expression parameter : parameters) {
             checkArgument(parameter.getType() != BuiltInType.VOID);
         }

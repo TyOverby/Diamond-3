@@ -226,28 +226,20 @@ final class ExpressionParser {
                                 throw new ParseException("expected ')'");
                             }
                             Expression invocation;
+                            if (target == null) {
+                                target = new ThisExpression();
+                                subList = stream.subList(i - 1, j + 1);
+                                i -= 1;
+                            } else {
+                                subList = stream.subList(i - 3, j + 1);
+                                i -= 3;
+                            }
                             if (leftToken.lexeme == Lexeme.IDENTIFIER) {
-                                if (target == null) {
-                                    target = new ThisExpression();
-                                    subList = stream.subList(i - 1, j + 1);
-                                    i -= 1;
-                                } else {
-                                    subList = stream.subList(i - 3, j + 1);
-                                    i -= 3;
-                                }
                                 invocation = new MethodInvocation(leftToken.contents, target, parameters);
                             } else if (leftToken.lexeme == Lexeme.NEW) {
-                                if (target == null) {
-                                    invocation = new ConstructorInvocation(null, parameters);
-                                    subList = stream.subList(i - 1, j + 1);
-                                    i -= 1;
-                                } else {
-                                    invocation = new ConstructorInvocation(((IdentifierReference) target).getName(), parameters);
-                                    subList = stream.subList(i - 3, j + 1);
-                                    i -= 3;
-                                }
+                                invocation = new ConstructorInvocation(target, parameters);
                             } else {
-                                throw new AssertionError("Left token MUST either be an identifier or lexeme!");
+                                throw new AssertionError("Left token MUST either be an identifier or \"new\"!");
                             }
                             subList.clear();
                             subList.add(invocation);
