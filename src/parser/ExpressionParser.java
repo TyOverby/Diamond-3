@@ -90,8 +90,8 @@ final class ExpressionParser {
             replaceImpl(begin, end, token);
         }
 
-        public void replace(Pointer begin, Pointer end, Expression... expressions) {
-            replaceImpl(begin, end, expressions);
+        public void replace(Pointer begin, Pointer end, Expression expression) {
+            replaceImpl(begin, end, expression);
         }
 
         private void replaceImpl(Pointer begin, Pointer end, Object object) {
