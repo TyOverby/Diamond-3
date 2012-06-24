@@ -26,7 +26,7 @@ public final class DiamondParser {
 
         CompilationUnit compilationUnit = new CompilationUnit();
         while (pos < tokens.size()) {
-            parse(compilationUnit);
+            parse(compilationUnit, false);
         }
         return compilationUnit;
     }
@@ -40,7 +40,8 @@ public final class DiamondParser {
      * future statement (method or type declaration) or a future expression (variable declaration). It has a similar
      * flag, as it must also be kept empty unless the current token was immediately preceded by other modifiers.
      */
-    private void parse(Statement context) throws ParseException {
+    private void parse(Statement context, boolean blockExpected) throws ParseException {
+        boolean inBlock = false;
         List<Token<Lexeme>> buffer = Lists.newArrayList();
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
         boolean modifiersAllowed = false; // set to true if we run into a modifier
@@ -57,7 +58,6 @@ public final class DiamondParser {
 
             // everything else we need to check for
             Expression condition; // since we need it in multiple cases
-            boolean inExpression = false; // assume we aren't for now
             switch (token.lexeme) {
                 // statements preceded by modifiers and followed by a block
                 case CLASS:
@@ -68,13 +68,13 @@ public final class DiamondParser {
                         throw new ParseException("nested types are not yet supported");
                     }
                     Statement typeDeclaration = new TypeDeclaration((CompilationUnit) context, typeName.contents, modifiers);
-                    parseBlock(typeDeclaration);
+                    parse(typeDeclaration, true);
                     modifiers.clear();
                     break;
                 // TODO: method declarations; can probably implement this by switching on IDENTIFIER and checking for
                 // TODO: two identifiers in a row followed by an opening parenthesis
 
-                // statements followed by a block, but without modifiers
+                // statements followed by a block (or a single statement or expression), but without modifiers
                 case DO:
                     int doIndex = pos; // index of the "do" keyword
                     int whileIndex = findDoWhile(); // index of the "while" keyword
@@ -87,12 +87,12 @@ public final class DiamondParser {
                     endIndex = pos;
                     Statement doLoop = new DoLoop(context, condition);
                     pos = doIndex;
-                    parseBlock(doLoop);
+                    parse(doLoop, true);
                     pos = endIndex;
                     break;
                 case ELSE:
                     Statement elseStatement = new ElseStatement(context);
-                    parseBlock(elseStatement);
+                    parse(elseStatement, true);
                     break;
                 case FOR:
                     // TODO: this one is trickier, so do it later
@@ -100,25 +100,25 @@ public final class DiamondParser {
                 case IF:
                     condition = getAdjacentExpression(true);
                     Statement ifStatement = new IfStatement(context, condition);
-                    parseBlock(ifStatement);
+                    parse(ifStatement, true);
                     break;
                 case REPEAT:
                     Expression repeatCount = getAdjacentExpression(true);
                     Statement repeatLoop = new RepeatLoop(context, repeatCount);
-                    parseBlock(repeatLoop);
+                    parse(repeatLoop, true);
                     break;
                 case SWITCH:
                     Expression value = getAdjacentExpression(true);
                     Statement switchStatement = new SwitchStatement(context, value);
-                    parseBlock(switchStatement);
+                    parse(switchStatement, true);
                     break;
                 case WHILE:
                     condition = getAdjacentExpression(true);
                     Statement whileLoop = new WhileLoop(context, condition);
-                    parseBlock(whileLoop);
+                    parse(whileLoop, true);
                     break;
 
-                // statements not followed by a block
+                // statements not followed by a block; these must all be followed by a semicolon
                 case BREAK:
                     if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
                         throw new ParseException("expected ';'");
@@ -137,6 +137,9 @@ public final class DiamondParser {
                     if (!(identifierReference instanceof IdentifierReference)) {
                         throw new ParseException("expected variable reference");
                     }
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
                     new DeleteStatement(context, (IdentifierReference) identifierReference);
                     break;
                 case RETURN:
@@ -144,21 +147,36 @@ public final class DiamondParser {
                     if (tokens.get(pos + 1).lexeme == Lexeme.SEMICOLON) {
                         // no value
                         new ReturnStatement(context);
-                        pos += 1;
                     } else {
                         // with value
                         Expression returnValue = getAdjacentExpression(false);
                         new ReturnStatement(context, returnValue);
                     }
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
                     break;
 
                 // control characters
+                case LEFT_BRACE:
+                    if (blockExpected) {
+                        inBlock = true;
+                        blockExpected = false;
+                        break;
+                    } else {
+                        throw new ParseException("unexpected '{'");
+                    }
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
                         throw new ParseException("expected statement or ';'");
+                    } else if (inBlock) {
+                        return;
+                    } else {
+                        throw new ParseException("unexpected '}'");
                     }
-                    return;
                 case SEMICOLON:
+                    // this means that everything in buffer constitutes an expression
+                    // expressions can have modifiers too, so insert them back into the buffer since we took them out
                     for (Modifier modifier : modifiers) {
                         switch (modifier) {
                             case PRIVATE: buffer.add(0, new Token<>(Lexeme.PRIVATE, "private")); break;
@@ -175,8 +193,6 @@ public final class DiamondParser {
                     buffer.clear();
                     modifiers.clear();
                     break;
-                case LEFT_BRACE:
-                    throw new ParseException("expected type declaration, if/else, or loop");
 
                 // everything else, which basically means tokens that are part of an expression
                 default:
@@ -190,23 +206,15 @@ public final class DiamondParser {
             } else if (!modifiersAllowed && !modifiers.isEmpty()) {
                 // if there are modifiers that are unaccounted for
                 throw new ParseException("unexpected modifiers preceding statement: " + modifiers);
+            } else if (!bufferAllowed && blockExpected) {
+                // we were expecting a block, and we got a single statement or expression instead
+                // this is completely valid (think else-if), but this "block" is now complete
+                return;
             } else {
                 modifiersAllowed = false;
             }
         }
         throw new ParseException("expected '}'");
-    }
-
-    private void parseBlock(Statement context) throws ParseException {
-        switch (tokens.get(++pos).lexeme) {
-            case LEFT_BRACE:
-                parse(context);
-            case SEMICOLON:
-                break;
-            // TODO: needs to support else-if chaining
-            default:
-                throw new ParseException("expected '{' or ';'");
-        }
     }
 
     /**
