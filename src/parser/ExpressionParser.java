@@ -313,6 +313,9 @@ final class ExpressionParser {
         }
     }
 
+    /*
+     * TODO: this really isn't correct, it needs to be handled in marshalExpression()
+     */
     private void parseVariableDeclarations() throws ParseException {
         for (int i = 0; i < stream.size(); i++) {
             if (stream.get(i) instanceof Token) {
@@ -323,7 +326,7 @@ final class ExpressionParser {
                     int typeLength = type.getNumberOfLexemes();
                     Set<Modifier> modifiers = getModifiersEndingAt((i - 1) - typeLength);
                     Expression expression = new VariableDeclaration(type, token.contents, modifiers);
-                    List<Object> subList = stream.subList(i - typeLength - modifiers.size(), i);
+                    List<Object> subList = stream.subList(i - typeLength - modifiers.size(), i + 1);
                     subList.clear();
                     subList.add(expression);
                     i -= (typeLength + modifiers.size());
