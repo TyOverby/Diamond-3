@@ -254,7 +254,7 @@ public class DiamondLexer {
 
         add(rg,Lexeme.IDENTIFIER,       "[a-zA-Z][a-zA-Z0-9_]*\\w*");
         add(rg,Lexeme.INTEGRAL_LITERAL, "(0x)?\\d+");
-        add(rg,Lexeme.STRING_LITERAL,   "\"(.*[^\\\\]|)(\\\\\\\\)*\"");
+        add(rg,Lexeme.STRING_LITERAL,   "\"(.*[^\\\\])?(\\\\\\\\)*\"");
 
         add(rg,Lexeme.COMMENT,          "//.*?$");
         add(rg,Lexeme.WHITESPACE,       "\\s+");
