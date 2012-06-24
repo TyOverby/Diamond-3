@@ -36,7 +36,9 @@ public final class DiamondParser {
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
         while (pos < tokens.size()) {
             Token<Lexeme> token = tokens.get(++pos);
+            Expression condition; // since we need it in multiple cases
             switch (token.lexeme) {
+                // modifiers
                 case PRIVATE:
                     modifiers.add(Modifier.PRIVATE);
                     break;
@@ -46,6 +48,7 @@ public final class DiamondParser {
                 case UNSAFE:
                     modifiers.add(Modifier.UNSAFE);
                     break;
+                // statements preceded by modifiers and followed by a block
                 case CLASS:
                     Token<Lexeme> typeName = tokens.get(++pos);
                     if (typeName.lexeme != Lexeme.IDENTIFIER) {
@@ -54,12 +57,13 @@ public final class DiamondParser {
                     Statement typeDeclaration = new TypeDeclaration(context, typeName.contents, modifiers);
                     parseBlock(typeDeclaration);
                     break;
+                // statements followed by a block, but without modifiers
                 case DO:
                     int doIndex = pos; // index of the "do" keyword
                     int whileIndex = findDoWhile(); // index of the "while" keyword
                     int endIndex; // index of the semicolon at the end
                     pos = whileIndex;
-                    Expression condition = getParentheticalExpression();
+                    condition = getParentheticalExpression();
                     if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
                         throw new ParseException("expected ';'");
                     }
@@ -69,6 +73,35 @@ public final class DiamondParser {
                     parseBlock(doLoop);
                     pos = endIndex;
                     break;
+                case ELSE:
+                    Statement elseStatement = new ElseStatement(context);
+                    parseBlock(elseStatement);
+                    break;
+                case FOR:
+                    // TODO: this one is trickier, so do it later
+                    break;
+                case IF:
+                    condition = getParentheticalExpression();
+                    Statement ifStatement = new IfStatement(context, condition);
+                    parseBlock(ifStatement);
+                    break;
+                case REPEAT:
+                    Expression repeatCount = getParentheticalExpression();
+                    Statement repeatLoop = new RepeatLoop(context, repeatCount);
+                    parseBlock(repeatLoop);
+                    break;
+                case SWITCH:
+                    Expression value = getParentheticalExpression();
+                    Statement switchStatement = new SwitchStatement(context, value);
+                    parseBlock(switchStatement);
+                    break;
+                case WHILE:
+                    condition = getParentheticalExpression();
+                    Statement whileLoop = new WhileLoop(context, condition);
+                    parseBlock(whileLoop);
+                    break;
+                // TODO: statements not followed by a block
+                // control characters
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
                         throw new ParseException("expected statement or ';'");
@@ -103,6 +136,7 @@ public final class DiamondParser {
                 parse(context);
             case SEMICOLON:
                 break;
+            // TODO: needs to support else-if chaining
             default:
                 throw new ParseException("expected '{' or ';'");
         }
