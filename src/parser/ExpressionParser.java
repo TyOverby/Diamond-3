@@ -361,7 +361,7 @@ final class ExpressionParser {
             switch (token.lexeme) {
                 case IDENTIFIER:
                     return new IdentifierReference(token.contents);
-                case NUMBER:
+                case INTEGRAL_LITERAL:
                     BigInteger value;
                     if (token.contents.startsWith("0x")) {
                         value = new BigInteger(token.contents.substring(2), 16);
@@ -369,7 +369,7 @@ final class ExpressionParser {
                         value = new BigInteger(token.contents);
                     }
                     return new IntegralLiteral(value);
-                case STRING: // TODO: there have to be string literals
+                case STRING_LITERAL:
                     return new StringLiteral(token.contents);
                 default:
                     throw new ParseException("expected expression");

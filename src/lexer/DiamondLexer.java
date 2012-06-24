@@ -108,10 +108,13 @@ public class DiamondLexer {
         TERNARY_QUESTION,
         TERNARY_COLON,
 
-        // OTHER
-        NUMBER,
-        COMMENT,
+        // identifiers and literals
         IDENTIFIER,
+        INTEGRAL_LITERAL,
+        STRING_LITERAL,
+
+        // things we don't care about
+        COMMENT,
         WHITESPACE
     }
 
@@ -126,9 +129,8 @@ public class DiamondLexer {
 
         Iterator<Token<Lexeme>> i = toReturn.iterator();
         for(Token<Lexeme>token=i.next();i.hasNext();token = i.next()){
-            if(token.lexeme==Lexeme.WHITESPACE){
+            if (token.lexeme == Lexeme.WHITESPACE || token.lexeme == Lexeme.COMMENT) {
                 i.remove();
-
             }
             System.out.println("looping.");
         }
@@ -140,7 +142,7 @@ public class DiamondLexer {
 
         Iterator<Token<Lexeme>> i = toReturn.iterator();
         for(Token<Lexeme>token=i.next();i.hasNext();token = i.next()){
-            if(token.lexeme==Lexeme.WHITESPACE){
+            if (token.lexeme == Lexeme.WHITESPACE || token.lexeme == Lexeme.COMMENT) {
                 i.remove();
             }
         }
@@ -218,8 +220,6 @@ public class DiamondLexer {
         add(rg,Lexeme.GREATER_THAN, ">");
         add(rg,Lexeme.LESS_THAN,    "<");
         add(rg,Lexeme.NOT,          "!");
-        add(rg,Lexeme.TERNARY_QUESTION, "\\?");
-        add(rg,Lexeme.TERNARY_COLON,    ":");
         add(rg,Lexeme.EQUALITY, "==");
         add(rg,Lexeme.LESS_THAN_EQUALS, "<=");
         add(rg,Lexeme.GREATER_THAN_EQUALS, ">=");
@@ -249,9 +249,14 @@ public class DiamondLexer {
         add(rg,Lexeme.SHIFT_LEFT_EQUALS, "<<=");
         add(rg,Lexeme.SHIFT_RIGHT_EQUALS, ">>=");
 
+        add(rg,Lexeme.TERNARY_QUESTION, "\\?");
+        add(rg,Lexeme.TERNARY_COLON,    ":");
+
+        add(rg,Lexeme.IDENTIFIER,       "[a-zA-Z][a-zA-Z0-9_]*\\w*");
+        add(rg,Lexeme.INTEGRAL_LITERAL, "(0x)?\\d+");
+        add(rg,Lexeme.STRING_LITERAL,   "\"(.*[^\\\\]|)(\\\\\\\\)*\"");
+
         add(rg,Lexeme.COMMENT,    "//[^\\n]*");
-        add(rg,Lexeme.IDENTIFIER, "[a-zA-Z]+\\w*");
-        add(rg,Lexeme.NUMBER,     "\\d+");
         add(rg,Lexeme.WHITESPACE, " +");
         add(rg,Lexeme.WHITESPACE, "\n+");
         add(rg,Lexeme.WHITESPACE, "\t+");
@@ -267,8 +272,8 @@ public class DiamondLexer {
         // If the pattern is a word, it adds the correct parens and adds the
         // "cannot be followed by a letter or number" qualifier
         if(isWord){
-           // Chill the fuck out.  That + sign will be optimized away
-           pattern = "("+pattern+")"+"[^\\w]";
+            // Chill the fuck out.  That + sign will be optimized away
+            pattern = "("+pattern+")"+"[^\\w]";
         }
         ruleGroups.add(new RuleGroup<Lexeme>(lexeme,pattern));
     }
