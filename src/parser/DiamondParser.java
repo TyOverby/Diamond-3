@@ -127,7 +127,8 @@ public final class DiamondParser {
         boolean expectingWhile = false; // whether the next token should be the "while" we are looking for
         // note that we need our own index here, because we don't want to modify the global one
         // i has the same meaning as pos in this context, namely, the index of the last token read
-        for (int i = pos; i < tokens.size(); i++) {
+        int i = pos;
+        while (i < tokens.size()) {
             Token<Lexeme> token = tokens.get(++i);
             if (expectingWhile) {
                 if (token.lexeme != Lexeme.WHILE) {
@@ -158,56 +159,42 @@ public final class DiamondParser {
         throw new ParseException("expected '}'");
     }
 
-    private Statement parseStatement(List<Token<Lexeme>> tokens) throws ParseException {
-        Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-        for (int i = 0; i < tokens.size(); i++) {
-            switch (tokens.get(i).lexeme) {
-                case PRIVATE:
-                    modifiers.add(Modifier.PRIVATE);
-                    break;
-                case STATIC:
-                    modifiers.add(Modifier.STATIC);
-                    break;
-                case UNSAFE:
-                    modifiers.add(Modifier.UNSAFE);
-                    break;
-                case CLASS:
-                    return new TypeDeclaration(current, tokens.get(i + 1).contents, modifiers);
-                case ELSE:
-                    Statement elseStatement = new ElseStatement(current);
-                    if (tokens.get(i + 1).lexeme == Lexeme.IF) {
-                        Statement oldCurrent = current;
-                        current = elseStatement;
-                        parseStatement(tokens.subList(i + 1, tokens.size()));
-                        current = oldCurrent;
-                    }
-                    return elseStatement;
-                case IF:
-                    return new IfStatement(current, getParentheticalExpression(tokens, i + 1));
-                case REPEAT:
-                    return new RepeatLoop(current, getParentheticalExpression(tokens, i + 1));
-                case SWITCH:
-                    return new SwitchStatement(current, getParentheticalExpression(tokens, i + 1));
-                case WHILE:
-                    return new WhileLoop(current, getParentheticalExpression(tokens, i + 1));
-                case FOR:
-                    // this one is a bit trickier, since there are three expressions
-            }
-        }
-    }
-
+    /**
+     * Returns the expression found in parenthesis at the current position, with the left parenthesis immediately
+     * following {@code pos}. In this context, the parentheses are mandatory, and a {@code ParseException} will be
+     * thrown if there is no left parenthesis immediately following {@code pos}. Expressions of this type are found as
+     * part of the {@code if}, {@code do}, {@code while}, {@code repeat}, and {@code switch} statements.
+     *
+     * @return the parenthetical expression immediately following {@code pos}
+     * @throws ParseException if either the starting or ending parenthesis is missing; or if multiple or no expressions
+     *                        are found
+     */
     private Expression getParentheticalExpression() throws ParseException {
         if (tokens.get(++pos).lexeme != Lexeme.LEFT_PAREN) {
             throw new ParseException("expected '('");
         }
-        List<Token<Lexeme>> expressionTokens = tokens.subList(pos, tokens.size());
-        List<Expression> expressions = new ExpressionParser().parseExpression(expressionTokens);
-        if (expressions.size() > 1) {
-            throw new ParseException("unexpected ','");
-        } else if (expressions.isEmpty()) {
-            throw new ParseException("expected expression");
-        } else {
-            return expressions.get(0);
+        int beginIndex = (pos + 1);
+        int depth = 1;
+        while (pos < tokens.size()) {
+            Token<Lexeme> token = tokens.get(++pos);
+            switch (token.lexeme) {
+                case LEFT_PAREN:
+                    depth++;
+                    break;
+                case RIGHT_PAREN:
+                    depth--;
+                    break;
+            }
+            if (depth == 0) {
+                List<Token<Lexeme>> expressionTokens = tokens.subList(beginIndex, pos);
+                List<Expression> expressions = new ExpressionParser().parseExpression(expressionTokens);
+                if (expressions.size() != 1) {
+                    throw new ParseException("expected a single expression; saw " + expressions.size());
+                } else {
+                    return expressions.get(0);
+                }
+            }
         }
+        throw new ParseException("expected ')'");
     }
 }
