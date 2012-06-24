@@ -53,19 +53,26 @@ public final class DiamondParser {
                     }
                     Statement typeDeclaration = new TypeDeclaration(context, typeName.contents, modifiers);
                     parseBlock(typeDeclaration);
+                    break;
                 case DO:
-                    int doIndex = pos;
-                    int whileIndex = findDoWhile();
+                    int doIndex = pos; // index of the "do" keyword
+                    int whileIndex = findDoWhile(); // index of the "while" keyword
+                    int endIndex; // index of the semicolon at the end
                     pos = whileIndex;
                     Expression condition = getParentheticalExpression();
+                    if (tokens.get(++pos).lexeme != Lexeme.SEMICOLON) {
+                        throw new ParseException("expected ';'");
+                    }
+                    endIndex = pos;
                     Statement doLoop = new DoLoop(context, condition);
                     pos = doIndex;
                     parseBlock(doLoop);
+                    pos = endIndex;
+                    break;
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
                         throw new ParseException("expected statement or ';'");
                     }
-                    pos += 1;
                     return;
                 case SEMICOLON:
                     for (Modifier modifier : modifiers) {
