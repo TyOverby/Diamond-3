@@ -12,6 +12,8 @@ public final class ForLoop extends WhileLoop {
         checkNotNull(initializer);
         checkNotNull(updater);
         this.initializer = initializer;
+        this.initializer.attach(this);
         this.updater = updater;
+        this.updater.attach(this);
     }
 }

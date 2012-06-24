@@ -10,5 +10,6 @@ public final class SwitchStatement extends Statement {
         checkNotNull(value);
         checkArgument(value.getType().isIntegral() || value.getType() == BuiltInType.INDETERMINATE);
         this.value = value;
+        this.value.attach(this);
     }
 }

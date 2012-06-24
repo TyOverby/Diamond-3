@@ -29,7 +29,7 @@ public final class ReturnStatement extends Statement {
 
     public ReturnStatement(Statement parent, Expression returnValue) throws ParseException {
         super(parent);
-        // some ancestor of this statement must be a method declaration, with return type void
+        // some ancestor of this statement must be a method declaration, with return type consistent with the return value
         Statement ancestor = parent;
         while (ancestor.getParent() != null) {
             if (ancestor instanceof MethodDeclaration) {

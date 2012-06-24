@@ -13,6 +13,8 @@ public final class ArrayAccess extends Expression {
         checkNotNull(index);
         checkArgument(index.getType().isIntegral() || index.getType() == BuiltInType.INDETERMINATE);
         this.array = array;
+        this.array.attach(this);
         this.index = index;
+        this.index.attach(this);
     }
 }

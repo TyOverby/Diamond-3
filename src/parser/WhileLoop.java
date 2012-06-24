@@ -10,5 +10,6 @@ public class WhileLoop extends Statement {
         checkNotNull(condition);
         checkArgument(condition.getType() == BuiltInType.BOOLEAN || condition.getType() == BuiltInType.INDETERMINATE);
         this.condition = condition;
+        this.condition.attach(this);
     }
 }

@@ -10,5 +10,6 @@ public final class RepeatLoop extends Statement {
         checkNotNull(repeatCount);
         checkArgument(repeatCount.getType().isIntegral() || repeatCount.getType() == BuiltInType.INDETERMINATE);
         this.repeatCount = repeatCount;
+        this.repeatCount.attach(this);
     }
 }
