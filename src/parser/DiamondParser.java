@@ -9,18 +9,21 @@ import java.util.List;
 import java.util.Set;
 
 public final class DiamondParser {
-    private Statement current;
-
     public DiamondParser() {
     }
 
     public CompilationUnit parse(List<Token<Lexeme>> tokens) throws ParseException {
         CompilationUnit compilationUnit = new CompilationUnit();
-        current = compilationUnit;
+        for (int i = 0; i < tokens.size(); i++) {
+            i = parse(tokens, i, compilationUnit);
+        }
+        return compilationUnit;
+    }
 
+    private int parse(List<Token<Lexeme>> tokens, int pos, Statement context) throws ParseException {
         List<Token<Lexeme>> buffer = Lists.newArrayList();
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-        for (int i = 0; i < tokens.size(); i++) {
+        for (int i = pos; i < tokens.size(); i++) {
             Token<Lexeme> token = tokens.get(i);
             switch (token.lexeme) {
                 case PRIVATE:
@@ -33,20 +36,16 @@ public final class DiamondParser {
                     modifiers.add(Modifier.UNSAFE);
                     break;
                 case CLASS:
-                    current = new TypeDeclaration(current, tokens.get(++i).contents, modifiers);
+                    Statement statement = new TypeDeclaration(context, tokens.get(++i).contents, modifiers);
                     if (tokens.get(++i).lexeme != Lexeme.LEFT_BRACE) {
                         throw new ParseException("expected '{'");
                     }
-                    buffer.clear();
-                    modifiers.clear();
-                    break;
+                    return parse(tokens, i, statement);
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
                         throw new ParseException("expected ';' or '{'");
                     }
-                    current = current.getParent();
-                    buffer.clear();
-                    break;
+                    return (i + 1);
                 case SEMICOLON:
                     for (Modifier modifier : modifiers) {
                         switch (modifier) {
@@ -60,20 +59,14 @@ public final class DiamondParser {
                     if (expressions.size() > 1) {
                         throw new ParseException("expected ';'");
                     } else if (!expressions.isEmpty()) {
-                        expressions.get(0).attach(current);
+                        expressions.get(0).attach(context);
                     }
-                    buffer.clear();
-                    break;
+                    return (i + 1);
                 case LEFT_BRACE:
                     throw new ParseException("expected type declaration, if/else, or loop");
             }
         }
-
-        if (current != compilationUnit) {
-            throw new ParseException("expected '}'");
-        }
-
-        return compilationUnit;
+        throw new ParseException("expected '}'");
     }
 
     private Statement parseStatement(List<Token<Lexeme>> tokens) throws ParseException {
