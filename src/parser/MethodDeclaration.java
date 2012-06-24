@@ -30,6 +30,9 @@ public final class MethodDeclaration extends Statement {
         checkNotNull(modifiers);
         checkNotNull(formalParameters);
         checkArgument(returnType != BuiltInType.INDETERMINATE);
+        for (Modifier modifier : modifiers) {
+            checkArgument(modifier.modifiesMethods());
+        }
         this.name = name;
         this.returnType = returnType;
         this.modifiers = ImmutableSet.copyOf(modifiers);

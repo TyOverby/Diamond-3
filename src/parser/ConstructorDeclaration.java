@@ -21,7 +21,10 @@ public final class ConstructorDeclaration extends Statement {
         checkNotNull(returnType);
         checkNotNull(modifiers);
         checkNotNull(formalParameters);
-        checkArgument(modifiers.equals(EnumSet.of(Modifier.STATIC)) || modifiers.equals(EnumSet.of(Modifier.STATIC, Modifier.PRIVATE)));
+        checkArgument(modifiers.contains(Modifier.STATIC));
+        for (Modifier modifier : modifiers) {
+            checkArgument(modifier.modifiesMethods());
+        }
         this.returnType = returnType;
         this.isPrivate = modifiers.contains(Modifier.PRIVATE);
         this.formalParameters = ImmutableList.copyOf(formalParameters);

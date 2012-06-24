@@ -22,7 +22,9 @@ public final class TypeDeclaration extends Statement {
         super(parent);
         checkNotNull(name);
         checkNotNull(modifiers);
-        checkArgument(modifiers.isEmpty() || modifiers.equals(EnumSet.of(Modifier.PRIVATE)));
+        for (Modifier modifier : modifiers) {
+            checkArgument(modifier.modifiesTypes());
+        }
         if (parent instanceof CompilationUnit) {
             checkArgument(modifiers.isEmpty());
         }

@@ -22,7 +22,9 @@ public final class VariableDeclaration extends Expression {
         checkNotNull(modifiers);
         checkArgument(type != BuiltInType.VOID);
         checkArgument(type != BuiltInType.INDETERMINATE);
-        checkArgument(modifiers.isEmpty() || modifiers.equals(EnumSet.of(Modifier.PRIVATE)));
+        for (Modifier modifier : modifiers) {
+            checkArgument(modifier.modifiesVariables());
+        }
         this.name = name;
         isPrivate = !modifiers.isEmpty();
     }

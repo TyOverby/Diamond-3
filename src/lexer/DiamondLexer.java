@@ -17,6 +17,7 @@ public class DiamondLexer {
         CASE,
         CATCH,
         CLASS,
+        CONST,
         CONTINUE,
         DEFAULT,
         DELETE,
@@ -51,6 +52,7 @@ public class DiamondLexer {
         THROWS,
         TRY,
         UNSAFE,
+        VIRTUAL,
         VOID,
         WHILE,
         YIELD,
@@ -159,6 +161,7 @@ public class DiamondLexer {
         add(rg,Lexeme.CASE,         "case:", true);
         add(rg,Lexeme.CATCH,        "catch", true);
         add(rg,Lexeme.CLASS,        "class", true);
+        add(rg,Lexeme.CONST,        "const", true);
         add(rg,Lexeme.CONTINUE,     "continue", true);
         add(rg,Lexeme.DEFAULT,      "default", true);
         add(rg,Lexeme.DELETE,       "delete", true);
@@ -193,6 +196,7 @@ public class DiamondLexer {
         add(rg,Lexeme.THROWS,       "throws", true);
         add(rg,Lexeme.TRY,          "try", true);
         add(rg,Lexeme.UNSAFE,       "unsafe", true);
+        add(rg,Lexeme.VIRTUAL,      "virtual", true);
         add(rg,Lexeme.VOID,         "void", true);
         add(rg,Lexeme.WHILE,        "while", true);
         add(rg,Lexeme.YIELD,        "yield", true);

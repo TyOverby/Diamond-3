@@ -120,7 +120,6 @@ final class ExpressionParser {
                 switch (token.lexeme) {
                     case PRIVATE: modifiers.add(Modifier.PRIVATE); break;
                     case STATIC: modifiers.add(Modifier.STATIC); break;
-                    case UNSAFE: modifiers.add(Modifier.UNSAFE); break;
                     default: flag = false;
                 }
             } else {

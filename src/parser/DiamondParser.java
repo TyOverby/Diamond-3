@@ -45,9 +45,6 @@ public final class DiamondParser {
                 case STATIC:
                     modifiers.add(Modifier.STATIC);
                     break;
-                case UNSAFE:
-                    modifiers.add(Modifier.UNSAFE);
-                    break;
                 // statements preceded by modifiers and followed by a block
                 case CLASS:
                     Token<Lexeme> typeName = tokens.get(++pos);
@@ -144,7 +141,6 @@ public final class DiamondParser {
                         switch (modifier) {
                             case PRIVATE: buffer.add(0, new Token<>(Lexeme.PRIVATE, "private")); break;
                             case STATIC: buffer.add(0, new Token<>(Lexeme.STATIC, "static")); break;
-                            case UNSAFE: buffer.add(0, new Token<>(Lexeme.UNSAFE, "unsafe")); break;
                             default: throw new UnsupportedOperationException("unknown modifier");
                         }
                     }
