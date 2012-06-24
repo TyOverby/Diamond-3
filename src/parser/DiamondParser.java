@@ -1,5 +1,6 @@
 package parser;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lexer.DiamondLexer.Lexeme;
 import lexer.Token;
@@ -9,22 +10,32 @@ import java.util.List;
 import java.util.Set;
 
 public final class DiamondParser {
+    private List<Token<Lexeme>> tokens;
+
+    /**
+     * The index of the LAST token read within the tokens list.
+     */
+    private int pos;
+
     public DiamondParser() {
     }
 
     public CompilationUnit parse(List<Token<Lexeme>> tokens) throws ParseException {
+        this.tokens = ImmutableList.copyOf(tokens);
+        this.pos = -1;
+
         CompilationUnit compilationUnit = new CompilationUnit();
-        for (int i = 0; i < tokens.size(); i++) {
-            i = parse(tokens, i, compilationUnit);
+        while (pos < tokens.size()) {
+            parse(compilationUnit);
         }
         return compilationUnit;
     }
 
-    private int parse(List<Token<Lexeme>> tokens, int pos, Statement context) throws ParseException {
+    private void parse(Statement context) throws ParseException {
         List<Token<Lexeme>> buffer = Lists.newArrayList();
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-        for (int i = pos; i < tokens.size(); i++) {
-            Token<Lexeme> token = tokens.get(i);
+        while (pos < tokens.size()) {
+            Token<Lexeme> token = tokens.get(++pos);
             switch (token.lexeme) {
                 case PRIVATE:
                     modifiers.add(Modifier.PRIVATE);
@@ -36,16 +47,26 @@ public final class DiamondParser {
                     modifiers.add(Modifier.UNSAFE);
                     break;
                 case CLASS:
-                    Statement statement = new TypeDeclaration(context, tokens.get(++i).contents, modifiers);
-                    if (tokens.get(++i).lexeme != Lexeme.LEFT_BRACE) {
-                        throw new ParseException("expected '{'");
+                    Token<Lexeme> typeName = tokens.get(++pos);
+                    if (typeName.lexeme != Lexeme.IDENTIFIER) {
+                        throw new ParseException("expected identifier");
                     }
-                    return parse(tokens, i, statement);
+                    Statement typeDeclaration = new TypeDeclaration(context, typeName.contents, modifiers);
+                    parseBlock(typeDeclaration);
+                case DO:
+                    int doIndex = pos;
+                    int whileIndex = findDoWhile();
+                    pos = whileIndex;
+                    Expression condition = getParentheticalExpression();
+                    Statement doLoop = new DoLoop(context, condition);
+                    pos = doIndex;
+                    parseBlock(doLoop);
                 case RIGHT_BRACE:
                     if (!buffer.isEmpty() || !modifiers.isEmpty()) {
-                        throw new ParseException("expected ';' or '{'");
+                        throw new ParseException("expected statement or ';'");
                     }
-                    return (i + 1);
+                    pos += 1;
+                    return;
                 case SEMICOLON:
                     for (Modifier modifier : modifiers) {
                         switch (modifier) {
@@ -61,9 +82,70 @@ public final class DiamondParser {
                     } else if (!expressions.isEmpty()) {
                         expressions.get(0).attach(context);
                     }
-                    return (i + 1);
+                    break;
                 case LEFT_BRACE:
                     throw new ParseException("expected type declaration, if/else, or loop");
+            }
+        }
+        throw new ParseException("expected '}'");
+    }
+
+    private void parseBlock(Statement context) throws ParseException {
+        switch (tokens.get(++pos).lexeme) {
+            case LEFT_BRACE:
+                parse(context);
+            case SEMICOLON:
+                break;
+            default:
+                throw new ParseException("expected '{' or ';'");
+        }
+    }
+
+    /**
+     * Searches for the {@code while} keyword following a {@code do} block, and returns the index of the {@code while}
+     * token within {@code tokens}. It is expected that {@code pos} is set the the index of the {@code do} keyword which
+     * triggered this search. There are two valid locations for the keyword:
+     * <ul>
+     * <li>Immediately following a curly-brace-delimited block, which itself immediately follows {@code do}</li>
+     * <li>Immediately following a semicolon, which itself immediately follows {@code do}</li>
+     * </ul>
+     *
+     * @return the index for the {@code while} keyword corresponding to the {@code do} token at {@code pos}
+     * @throws ParseException if the {@code while} keyword is missing; if neither {@code &#123;} nor {@code ;}
+     *                        immediately follows {@code do}; or if the token stream ends without the appropriate number
+     *                        of {@code &#125;} tokens
+     */
+    private int findDoWhile() throws ParseException {
+        int depth = 0;
+        boolean expectingWhile = false; // whether the next token should be the "while" we are looking for
+        // note that we need our own index here, because we don't want to modify the global one
+        // i has the same meaning as pos in this context, namely, the index of the last token read
+        for (int i = pos; i < tokens.size(); i++) {
+            Token<Lexeme> token = tokens.get(++i);
+            if (expectingWhile) {
+                if (token.lexeme != Lexeme.WHILE) {
+                    throw new ParseException("expected \"while\"");
+                } else {
+                    return i;
+                }
+            }
+            switch (token.lexeme) {
+                case LEFT_BRACE:
+                    depth++;
+                    break;
+                case RIGHT_BRACE:
+                    depth--;
+                    break;
+                case SEMICOLON:
+                    break;
+                default:
+                    if ((i - 1) == pos) {
+                        // the first token following "do" must be either a brace or semicolon
+                        throw new ParseException("expected '{' or ';'");
+                    }
+            }
+            if (depth == 0) {
+                expectingWhile = true;
             }
         }
         throw new ParseException("expected '}'");
@@ -107,11 +189,11 @@ public final class DiamondParser {
         }
     }
 
-    private Expression getParentheticalExpression(List<Token<Lexeme>> tokens, int index) throws ParseException {
-        if (tokens.get(index).lexeme != Lexeme.LEFT_PAREN) {
+    private Expression getParentheticalExpression() throws ParseException {
+        if (tokens.get(++pos).lexeme != Lexeme.LEFT_PAREN) {
             throw new ParseException("expected '('");
         }
-        List<Token<Lexeme>> expressionTokens = tokens.subList(index, tokens.size());
+        List<Token<Lexeme>> expressionTokens = tokens.subList(pos, tokens.size());
         List<Expression> expressions = new ExpressionParser().parseExpression(expressionTokens);
         if (expressions.size() > 1) {
             throw new ParseException("unexpected ','");
