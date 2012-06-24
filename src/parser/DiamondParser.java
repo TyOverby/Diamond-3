@@ -18,31 +18,54 @@ public final class DiamondParser {
         CompilationUnit compilationUnit = new CompilationUnit();
         current = compilationUnit;
 
-        List<Token<Lexeme>> nextNode = Lists.newArrayList();
-        for (Token<Lexeme> token : tokens) {
+        List<Token<Lexeme>> buffer = Lists.newArrayList();
+        Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        for (int i = 0; i < tokens.size(); i++) {
+            Token<Lexeme> token = tokens.get(i);
             switch (token.lexeme) {
-                // TODO: do-while needs to be handled in this switch statement
-                case LEFT_BRACE:
-                    current = parseStatement(nextNode);
-                    nextNode.clear();
+                case PRIVATE:
+                    modifiers.add(Modifier.PRIVATE);
+                    break;
+                case STATIC:
+                    modifiers.add(Modifier.STATIC);
+                    break;
+                case UNSAFE:
+                    modifiers.add(Modifier.UNSAFE);
+                    break;
+                case CLASS:
+                    current = new TypeDeclaration(current, tokens.get(++i).contents, modifiers);
+                    if (tokens.get(++i).lexeme != Lexeme.LEFT_BRACE) {
+                        throw new ParseException("expected '{'");
+                    }
+                    buffer.clear();
+                    modifiers.clear();
                     break;
                 case RIGHT_BRACE:
-                    if (!nextNode.isEmpty()) {
+                    if (!buffer.isEmpty() || !modifiers.isEmpty()) {
                         throw new ParseException("expected ';' or '{'");
                     }
                     current = current.getParent();
-                    nextNode.clear();
+                    buffer.clear();
                     break;
                 case SEMICOLON:
-                    // TODO: return and delete have to be dealt with here, since they aren't expressions
-                    List<Expression> expressions = new ExpressionParser().parseExpression(nextNode);
+                    for (Modifier modifier : modifiers) {
+                        switch (modifier) {
+                            case PRIVATE: buffer.add(0, new Token<>(Lexeme.PRIVATE, "private")); break;
+                            case STATIC: buffer.add(0, new Token<>(Lexeme.STATIC, "static")); break;
+                            case UNSAFE: buffer.add(0, new Token<>(Lexeme.UNSAFE, "unsafe")); break;
+                            default: throw new UnsupportedOperationException("unknown modifier");
+                        }
+                    }
+                    List<Expression> expressions = new ExpressionParser().parseExpression(buffer);
                     if (expressions.size() > 1) {
                         throw new ParseException("expected ';'");
                     } else if (!expressions.isEmpty()) {
                         expressions.get(0).attach(current);
                     }
-                    nextNode.clear();
+                    buffer.clear();
                     break;
+                case LEFT_BRACE:
+                    throw new ParseException("expected type declaration, if/else, or loop");
             }
         }
 
